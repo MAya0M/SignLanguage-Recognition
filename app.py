@@ -6,6 +6,11 @@ Upload a video and get predictions from the trained model
 import os
 import sys
 from pathlib import Path
+
+# Suppress TensorFlow warnings and info messages
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # 0=all, 1=info, 2=warnings, 3=errors only
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 import tempfile
