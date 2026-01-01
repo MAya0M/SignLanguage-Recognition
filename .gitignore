@@ -32,10 +32,9 @@ output/*.mp4
 temp/
 *.pem
 
-# Data (large files - add if needed)
-# Data/rawVideos/
-# Data/Keypoints/
-# sign_language_data.tar.gz
+# Flask
+*.db
+instance/
 
 # Keep these
 !models/.gitkeep

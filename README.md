@@ -113,6 +113,7 @@ python scripts/predict.py \
 ✅ **Google Colab** - GPU חינם, אימון אוטומטי  
 ✅ **מודל GRU** - לזיהוי sequences של תנועות יד  
 ✅ **חיזוי מסרטונים** - חיזוי ישירות מסרטונים או keypoints  
+✅ **אפליקציית Web** - העלה סרטון וקבל תרגום דרך דפדפן! 🎬  
 
 ---
 
@@ -122,6 +123,8 @@ python scripts/predict.py \
 - **[מדריך Colab](docs/COLAB_UPLOAD_GUIDE.md)** - איך להעלות נתונים ל-Colab
 - **[מדריך יישום](docs/IMPLEMENTATION_GUIDE.md)** - מדריך יישום מלא
 - **[הסבר מודל](docs/MODEL_EXPLANATION.md)** - איך המודל עובד
+- **[מדריך אפליקציה](docs/APP_GUIDE.md)** - אפליקציית Web להעלאת סרטונים
+- **[README אפליקציה](README_APP.md)** - התחלה מהירה לאפליקציה
 
 ---
 
@@ -137,7 +140,11 @@ python scripts/create_dataset_csv.py
 # 3. אימון (Google Colab מומלץ!)
 # לחץ על "Open in Colab" למעלה
 
-# 4. חיזוי
+# 4. הרצת אפליקציית Web
+python app.py
+# פתח http://localhost:5000 והעלה סרטון!
+
+# או חיזוי דרך command line
 python scripts/predict.py --model models/.../best_model.keras --video test.mp4
 ```
 
