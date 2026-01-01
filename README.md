@@ -6,6 +6,8 @@ Sign language recognition system using GRU Neural Network.
 
 > **Fully Automatic!** Just click the button above, select GPU, and Run all. Everything will work automatically! 🚀
 
+> **✅ Production Ready!** The app is tested and deployed on Railway. All dependencies are configured for cloud deployment.
+
 ## 🚀 Quick Start
 
 ### Option 1: Use Online App (Recommended!)
