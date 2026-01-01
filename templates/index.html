@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Language Recognition - זיהוי שפת סימנים</title>
+    <title>Sign Language Recognition</title>
     <style>
         * {
             margin: 0;
@@ -229,18 +229,18 @@
 <body>
     <div class="container">
         <h1>🎬 Sign Language Recognition</h1>
-        <p class="subtitle">העלה סרטון בשפת סימנים וקבל תרגום לאנגלית</p>
+        <p class="subtitle">Upload a sign language video and get English translation</p>
 
         {% if not has_model %}
         <div class="warning">
-            ⚠️ אין מודל מאומן. אנא אמן מודל תחילה.
+            ⚠️ No trained model found. Please train a model first.
         </div>
         {% endif %}
 
         <div class="upload-area" id="uploadArea">
             <div class="upload-icon">📹</div>
-            <div class="upload-text">גרור וזרוק סרטון כאן</div>
-            <div class="upload-hint">או לחץ כדי לבחור קובץ</div>
+            <div class="upload-text">Drag and drop video here</div>
+            <div class="upload-hint">or click to select file</div>
             <div class="upload-hint" style="margin-top: 10px;">MP4, AVI, MOV, MKV, WEBM</div>
         </div>
 
@@ -255,12 +255,12 @@
         </div>
 
         <button class="btn" id="predictBtn" onclick="predict()" disabled>
-            🚀 זהה שפת סימנים
+            🚀 Recognize Sign Language
         </button>
 
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <div>מעבד את הסרטון...</div>
+            <div>Processing video...</div>
         </div>
 
         <div class="result" id="result">
@@ -313,7 +313,7 @@
             if (!file) return;
 
             if (!file.type.startsWith('video/')) {
-                showError('אנא בחר קובץ וידאו');
+                showError('Please select a video file');
                 return;
             }
 
@@ -358,30 +358,29 @@
                 if (data.success) {
                     showSuccess(data);
                 } else {
-                    showError(data.error || 'שגיאה בהעלאת הסרטון');
+                    showError(data.error || 'Error uploading video');
                 }
             } catch (error) {
                 loading.classList.remove('show');
                 predictBtn.disabled = false;
-                showError('שגיאה בחיבור לשרת: ' + error.message);
+                showError('Server connection error: ' + error.message);
             }
         }
 
         function showSuccess(data) {
             result.className = 'result success show';
-            document.getElementById('resultTitle').textContent = '✅ זיהוי הושלם!';
+            document.getElementById('resultTitle').textContent = '✅ Recognition Complete!';
             document.getElementById('prediction').textContent = data.prediction;
             document.getElementById('confidence').textContent = 
-                `רמת ביטחון: ${(data.confidence * 100).toFixed(1)}%`;
+                `Confidence: ${(data.confidence * 100).toFixed(1)}%`;
         }
 
         function showError(message) {
             result.className = 'result error show';
-            document.getElementById('resultTitle').textContent = '❌ שגיאה';
+            document.getElementById('resultTitle').textContent = '❌ Error';
             document.getElementById('prediction').textContent = message;
             document.getElementById('confidence').textContent = '';
         }
     </script>
 </body>
 </html>
-

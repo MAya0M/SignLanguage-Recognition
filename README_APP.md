@@ -1,52 +1,51 @@
 # Sign Language Recognition - Web App
 
-אפליקציית Web פשוטה להעלאת סרטונים ולקבלת תחזיות מהמודל המאומן.
+Simple web application for uploading videos and getting predictions from the trained model.
 
-## 🚀 התחלה מהירה
+## 🚀 Quick Start
 
-### 1. אמן מודל (אם צריך)
+### 1. Train Model (if needed)
 
 ```bash
-# דרך Colab (מומלץ)
-# פתח notebooks/SignLanguage_Training.ipynb ב-Colab
+# Via Colab (recommended)
+# Open notebooks/SignLanguage_Training.ipynb in Colab
 
-# או מקומי
+# Or locally
 python scripts/train_model.py --csv Data/Labels/dataset.csv
 ```
 
-### 2. הרץ את האפליקציה
+### 2. Run the App
 
 ```bash
 python app.py
 ```
 
-### 3. פתח בדפדפן
+### 3. Open in Browser
 
 ```
 http://localhost:5000
 ```
 
-**זה הכל!** העלה סרטון וקבל תרגום! 🎉
+**That's it!** Upload a video and get translation! 🎉
 
 ---
 
-## 📋 תכונות
+## 📋 Features
 
-✅ **ממשק Web פשוט** - גרור וזרוק סרטונים  
-✅ **תמיכה בפורמטים רבים** - MP4, AVI, MOV, MKV, WEBM  
-✅ **תצוגה מקדימה** - צפה בסרטון לפני העלאה  
-✅ **API** - אפשר להשתמש גם דרך API  
-✅ **עיצוב מודרני** - UI יפה וידידותי  
-
----
-
-## 📖 מדריכים נוספים
-
-- **[מדריך מפורט](docs/APP_GUIDE.md)** - כל הפרטים על האפליקציה
-- **[מדריך אימון](docs/README_MODEL.md)** - איך לאמן את המודל
-- **[מדריך Colab](docs/COLAB_UPLOAD_GUIDE.md)** - אימון ב-Colab
+✅ **Simple Web Interface** - Drag and drop videos  
+✅ **Multiple Format Support** - MP4, AVI, MOV, MKV, WEBM  
+✅ **Video Preview** - Preview video before upload  
+✅ **API** - Can also be used via API  
+✅ **Modern Design** - Beautiful and user-friendly UI  
 
 ---
 
-**בהצלחה! 🚀**
+## 📖 Additional Guides
 
+- **[Detailed Guide](docs/APP_GUIDE.md)** - All details about the app
+- **[Training Guide](docs/README_MODEL.md)** - How to train the model
+- **[Colab Guide](docs/COLAB_UPLOAD_GUIDE.md)** - Training on Colab
+
+---
+
+**Good luck! 🚀**
