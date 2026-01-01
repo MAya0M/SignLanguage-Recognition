@@ -2,10 +2,26 @@
 
 מערכת לזיהוי שפת סימנים באמצעות GRU Neural Network.
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/MAya0M/SignLanguage-Recognition/blob/main/notebooks/SignLanguage_Training.ipynb)
+
+> **אוטומטי לחלוטין!** פשוט לחץ על הכפתור למעלה, בחר GPU, ו-Run all. הכל יעבוד אוטומטית! 🚀
+
+## התחלה מהירה - Google Colab
+
+**הדרך הקלה ביותר להתחיל:**
+
+1. לחץ על הכפתור "Open in Colab" למעלה ⬆️
+2. Runtime → Change runtime type → Select **GPU**
+3. Run all cells (Runtime → Run all)
+
+**זה הכל!** המודל יתאמן אוטומטית.
+
+---
+
 ## מבנה הפרויקט
 
 ```
-signlanguage/
+SignLanguage-Recognition/
 ├── Data/                    # נתונים
 │   ├── Keypoints/          # Keypoints מופקים (.npy files)
 │   ├── Labels/             # CSV files עם dataset splits
@@ -17,26 +33,32 @@ signlanguage/
 │   ├── train_model.py            # אימון מודל GRU
 │   ├── predict.py                # חיזוי מסרטונים
 │   ├── data_loader.py            # טעינת נתונים
-│   ├── model_gru.py              # ארכיטקטורת מודל
-│   ├── aws_setup.py              # כלי AWS
-│   └── train_sagemaker.py        # SageMaker training
-├── utils/                  # כלי עזר
-│   ├── verify_csv_files.py
-│   └── ...
+│   └── model_gru.py              # ארכיטקטורת מודל
+├── notebooks/              # Jupyter notebooks
+│   └── SignLanguage_Training.ipynb  # Colab notebook אוטומטי
 ├── docs/                   # תיעוד
 │   ├── README.md
 │   ├── README_MODEL.md
-│   ├── AWS_EC2_GUIDE.md          # מדריך EC2 (מומלץ!)
-│   └── AWS_TRAINING_GUIDE.md      # מדריך SageMaker
+│   ├── COLAB_UPLOAD_GUIDE.md
+│   └── ...
 ├── models/                 # מודלים מאומנים
 ├── output/                 # פלטים (annotated videos, etc.)
-├── notebooks/                # Jupyter notebooks
-├── temp/                   # קבצים זמניים
-├── IMPLEMENTATION_GUIDE.md # מדריך יישום מלא
+├── utils/                  # כלי עזר
 └── requirements.txt        # תלויות Python
 ```
 
-## התקנה מהירה
+---
+
+## התקנה מקומית
+
+### 1. Clone Repository
+
+```bash
+git clone https://github.com/MAya0M/SignLanguage-Recognition.git
+cd SignLanguage-Recognition
+```
+
+### 2. התקן תלויות
 
 ```bash
 # יצירת virtual environment
@@ -48,48 +70,60 @@ venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 ```
 
-## שימוש מהיר
+---
 
-### 1. חילוץ Keypoints מסרטונים
+## שימוש
+
+### Google Colab (מומלץ!) ⭐
+
+**הדרך הכי קלה:**
+1. לחץ על [Open in Colab](https://colab.research.google.com/github/MAya0M/SignLanguage-Recognition/blob/main/notebooks/SignLanguage_Training.ipynb)
+2. Runtime → Change runtime type → **GPU**
+3. Run all cells
+
+**או:**
+1. פתח [Google Colab](https://colab.research.google.com)
+2. File → Open notebook → GitHub
+3. הזן: `MAya0M/SignLanguage-Recognition`
+4. בחר: `notebooks/SignLanguage_Training.ipynb`
+
+### מקומי (אם יש GPU)
+
 ```bash
+# 1. חילוץ keypoints
 python scripts/extract_keypoints.py
-```
 
-### 2. יצירת Dataset CSV
-```bash
+# 2. יצירת dataset
 python scripts/create_dataset_csv.py
-```
 
-### 3. אימון המודל
-
-**מקומי (אם יש GPU):**
-```bash
+# 3. אימון המודל
 python scripts/train_model.py --csv Data/Labels/dataset.csv
-```
 
-**ב-AWS EC2 (מומלץ - זול יותר):**
-ראה [docs/AWS_EC2_GUIDE.md](docs/AWS_EC2_GUIDE.md)
-
-### 4. חיזוי מסרטון
-```bash
+# 4. חיזוי
 python scripts/predict.py \
     --model models/run_*/best_model.keras \
     --video your_video.mp4
 ```
 
+---
+
 ## תכונות עיקריות
 
 ✅ **נרמול מתקדם** - בלתי תלוי במיקום היד, גודל היד, וצד היד (שמאל/ימין)  
-✅ **תמיכה ב-AWS EC2** - פתרון חסכוני לאימון (עד $0.10/שעה עם Spot)  
+✅ **Google Colab** - GPU חינם, אימון אוטומטי  
 ✅ **מודל GRU** - לזיהוי sequences של תנועות יד  
 ✅ **חיזוי מסרטונים** - חיזוי ישירות מסרטונים או keypoints  
 
+---
+
 ## תיעוד
 
-- **[מדריך יישום מלא](IMPLEMENTATION_GUIDE.md)** - התחל כאן! 📖
 - **[מדריך מודל](docs/README_MODEL.md)** - פרטים על המודל והאימון
-- **[מדריך AWS EC2](docs/AWS_EC2_GUIDE.md)** - אימון ב-EC2 (מומלץ, זול) 💰
-- **[מדריך AWS SageMaker](docs/AWS_TRAINING_GUIDE.md)** - אופציה נוספת
+- **[מדריך Colab](docs/COLAB_UPLOAD_GUIDE.md)** - איך להעלות נתונים ל-Colab
+- **[מדריך יישום](docs/IMPLEMENTATION_GUIDE.md)** - מדריך יישום מלא
+- **[הסבר מודל](docs/MODEL_EXPLANATION.md)** - איך המודל עובד
+
+---
 
 ## Workflow מלא
 
@@ -100,36 +134,33 @@ python scripts/extract_keypoints.py
 # 2. יצירת dataset
 python scripts/create_dataset_csv.py
 
-# 3. אימון (מקומי או AWS)
-python scripts/train_model.py --csv Data/Labels/dataset.csv
+# 3. אימון (Google Colab מומלץ!)
+# לחץ על "Open in Colab" למעלה
 
 # 4. חיזוי
 python scripts/predict.py --model models/.../best_model.keras --video test.mp4
 ```
 
-## עלויות AWS
-
-| Instance Type | On-Demand | Spot | אימון 4 שעות |
-|--------------|-----------|------|--------------|
-| g4dn.xlarge   | $0.50/שעה | ~$0.05/שעה | $0.20-$2.00 |
-| g4dn.2xlarge  | $0.75/שעה | ~$0.08/שעה | $0.32-$3.00 |
-
-**עם Spot Instances, אימון יכול לעלות פחות מדולר!**
+---
 
 ## דרישות
 
 - Python 3.8+
-- GPU (מומלץ לאימון) או AWS EC2
+- GPU (מומלץ לאימון) - Google Colab מספק GPU חינם!
 - ~10GB disk space
 - MediaPipe Hand Landmarker model (מורד אוטומטית)
+
+---
 
 ## רישיון
 
 פרויקט זה הוא למטרות לימוד.
 
+---
+
 ## תמיכה
 
-לשאלות ובעיות, ראה את המדריכים ב-`docs/` או `IMPLEMENTATION_GUIDE.md`.
+לשאלות ובעיות, ראה את המדריכים ב-`docs/`.
 
 ---
 

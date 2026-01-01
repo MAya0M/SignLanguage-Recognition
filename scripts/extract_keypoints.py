@@ -72,13 +72,13 @@ def normalize_keypoints(keypoints_array):
             hand_keypoints = hand_keypoints - wrist
             
             # Step 2: Determine if left or right hand and flip if needed
-            # Use the direction from pinky to index finger MCP to determine hand orientation
+            # Use the direction from wrist to index finger MCP to determine hand orientation
             index_mcp = hand_keypoints[INDEX_FINGER_MCP_IDX, :]
             pinky_mcp = hand_keypoints[PINKY_MCP_IDX, :]
             
-            # Vector from pinky to index (in camera view)
-            # For right hand: index is to the right (positive X), pinky is to the left (negative X)
-            # For left hand: index is to the left (negative X), pinky is to the right (positive X)
+            # Cross product to determine hand orientation
+            # For right hand: index is to the right, pinky is to the left (in camera view)
+            # We want to normalize to a consistent orientation (right-hand orientation)
             hand_direction = index_mcp - pinky_mcp
             
             # If the x-component is negative, it's likely a left hand, flip it
@@ -100,9 +100,8 @@ def normalize_keypoints(keypoints_array):
                 current_direction = middle_mcp_xy / middle_mcp_xy_norm
                 
                 # Calculate rotation angle
-                # For 2D vectors, cross product is: a.x * b.y - a.y * b.x
                 cos_angle = np.dot(current_direction, target_direction)
-                sin_angle = current_direction[0] * target_direction[1] - current_direction[1] * target_direction[0]
+                sin_angle = np.cross(current_direction, target_direction)
                 angle = np.arctan2(sin_angle, cos_angle)
                 
                 # Apply rotation to XY plane

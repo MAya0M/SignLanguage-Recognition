@@ -9,7 +9,7 @@
 3. [יצירת Dataset](#3-יצירת-dataset)
 4. [אימון המודל](#4-אימון-המודל)
 5. [שימוש במודל](#5-שימוש-במודל)
-6. [אימון ב-AWS](#6-אימון-ב-aws)
+6. [אימון ב-Google Colab](#6-אימון-ב-google-colab)
 
 ---
 
@@ -207,59 +207,45 @@ python scripts/predict.py \
 
 ---
 
-## 6. אימון ב-AWS
+## 6. אימון ב-Google Colab
 
-### 6.1 הכנת נתונים
+### 6.1 פתיחת Notebook ב-Colab
 
-```bash
-# צור ארכיון
-python scripts/aws_setup.py --create-archive
+**הדרך הקלה ביותר:**
 
-# העלה ל-S3
-aws s3 cp sign_language_data.tar.gz s3://your-bucket/data/
-```
+1. לך ל-[Google Colab](https://colab.research.google.com)
+2. File → Open notebook → GitHub
+3. הזן: `MAya0M/SignLanguage-Recognition`
+4. בחר: `notebooks/SignLanguage_Training.ipynb`
 
-### 6.2 הפעלת EC2 Instance
+**או פשוט לחץ על הכפתור "Open in Colab" ב-README!**
 
-ראה [AWS_EC2_GUIDE.md](docs/AWS_EC2_GUIDE.md) למדריך מפורט.
+ראה [COLAB_AUTOMATIC_SETUP.md](COLAB_AUTOMATIC_SETUP.md) למדריך מפורט.
 
-**קיצור:**
-1. הפעל EC2 instance עם GPU (g4dn.xlarge)
-2. בחר Deep Learning AMI
-3. התחבר דרך SSH
-4. הורד את הפרויקט והנתונים
-5. הרץ אימון ב-screen
+### 6.2 הגדרת GPU
 
-### 6.3 אימון ב-EC2
+1. **Runtime → Change runtime type**
+2. **Hardware accelerator → GPU (T4)**
+3. **Save**
 
-```bash
-# התחבר
-ssh -i your-key.pem ubuntu@YOUR_INSTANCE_IP
+### 6.3 העלאת נתונים
 
-# צור screen session
-screen -S training
+**דרך 1: Google Drive (מומלץ)**
+- העלה את `sign_language_data.tar.gz` ל-Google Drive
+- Mount Drive ב-Colab
+- העתק את הקובץ לתיקיית הפרויקט
 
-# הורד נתונים
-aws s3 sync s3://your-bucket/data/Data/ ./Data/
+**דרך 2: ישירות ב-Colab**
+- Files → Upload to session storage
+- העלה את הקבצים הנדרשים
 
-# הרץ אימון
-cd signlanguage
-source venv/bin/activate
-python scripts/train_model.py --csv Data/Labels/dataset.csv ...
+למדריך מפורט, ראה [COLAB_UPLOAD_GUIDE.md](COLAB_UPLOAD_GUIDE.md)
 
-# ניתוק: Ctrl+A, D
-# התחברות מחדש: screen -r training
-```
+### 6.4 אימון
 
-### 6.4 הורדת מודל
+פשוט **Runtime → Run all** - הכל אוטומטי!
 
-```bash
-# שמור ל-S3 (מתוך EC2)
-aws s3 sync models/ s3://your-bucket/models/
-
-# הורד למחשב המקומי
-aws s3 sync s3://your-bucket/models/ ./models/
-```
+המודל יתאמן ויישמר בתיקיית `models/`.
 
 ---
 
@@ -328,7 +314,7 @@ python scripts/extract_keypoints.py
 # 2. יצירת dataset
 python scripts/create_dataset_csv.py
 
-# 3. אימון (מקומי או AWS)
+# 3. אימון (מקומי או Google Colab)
 python scripts/train_model.py --csv Data/Labels/dataset.csv
 
 # 4. חיזוי
@@ -342,7 +328,7 @@ python scripts/predict.py --model models/.../best_model.keras --video test.mp4
 1. ✅ הכן את הסביבה
 2. ✅ חלץ keypoints מהסרטונים
 3. ✅ צור dataset CSV
-4. ✅ אמן את המודל (מקומי או AWS)
+4. ✅ אמן את המודל (מקומי או Google Colab)
 5. ✅ בדוק את המודל על סרטונים חדשים
 6. 🔄 שפר את המודל לפי הצורך
 
