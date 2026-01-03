@@ -170,8 +170,11 @@ class SignLanguageDataLoader:
                 self.mean = self.mean.reshape(1, 1, -1)
                 self.std = self.std.reshape(1, 1, -1)
                 
-                # Normalize all data (including padding, but stats are from non-padded)
-                X_padded = (X_padded - self.mean) / self.std
+                # Normalize only non-padded parts (keep padding as zeros)
+                # This is critical - padding should stay as zeros, not be normalized
+                for i, seq_len in enumerate(seq_lengths):
+                    X_padded[i, :seq_len, :] = (X_padded[i, :seq_len, :] - self.mean[0, 0, :]) / self.std[0, 0, :]
+                # Padding remains as zeros (already zero, so no change needed)
                 
                 # Store normalization stats for val/test
                 self._normalization_mean = self.mean
@@ -186,13 +189,23 @@ class SignLanguageDataLoader:
         else:
             # Use training statistics for validation/test
             if hasattr(self, '_normalization_mean') and hasattr(self, '_normalization_std'):
-                X_padded = (X_padded - self._normalization_mean) / self._normalization_std
+                # Normalize only non-padded parts (keep padding as zeros)
+                for i, seq_len in enumerate(seq_lengths):
+                    X_padded[i, :seq_len, :] = (X_padded[i, :seq_len, :] - self._normalization_mean[0, 0, :]) / self._normalization_std[0, 0, :]
+                # Padding remains as zeros
             else:
                 # Fallback: normalize with current data stats (shouldn't happen)
                 print("⚠️  WARNING: Using fallback normalization for validation/test")
-                mean = np.mean(X_padded, axis=(0, 1), keepdims=True)
-                std = np.std(X_padded, axis=(0, 1), keepdims=True) + 1e-8
-                X_padded = (X_padded - mean) / std
+                # Calculate stats from non-padded data
+                non_padded_data = []
+                for i, seq_len in enumerate(seq_lengths):
+                    non_padded_data.append(X_padded[i, :seq_len, :])
+                if non_padded_data:
+                    all_non_padded = np.concatenate(non_padded_data, axis=0)
+                    mean = np.mean(all_non_padded, axis=0, keepdims=True).reshape(1, 1, -1)
+                    std = np.std(all_non_padded, axis=0, keepdims=True).reshape(1, 1, -1) + 1e-8
+                    for i, seq_len in enumerate(seq_lengths):
+                        X_padded[i, :seq_len, :] = (X_padded[i, :seq_len, :] - mean[0, 0, :]) / std[0, 0, :]
         
         print(f"Loaded {len(X_padded)} samples")
         print(f"X shape: {X_padded.shape}")

@@ -32,6 +32,7 @@ def check_data_differences():
     
     # Check mean values per class
     print("\nMean values per class (first 5 features):")
+    print("⚠️  NOTE: If all classes have similar means, normalization might be the problem!")
     for class_idx in range(loader.num_classes):
         class_mask = y_train == class_idx
         if np.any(class_mask):
@@ -40,7 +41,42 @@ def check_data_differences():
             # Calculate mean only for non-zero (non-padded) parts
             # For simplicity, use all data but note padding effect
             class_mean = np.mean(class_data, axis=(0, 1))
-            print(f"  {class_name:12s}: {class_mean[:5]}")
+            class_std = np.std(class_data, axis=(0, 1))
+            print(f"  {class_name:12s}: mean={class_mean[:5]}, std={class_std[:5]}")
+    
+    # Check if classes are too similar
+    print("\n⚠️  Checking if classes are too similar after normalization...")
+    class_means = []
+    for class_idx in range(loader.num_classes):
+        class_mask = y_train == class_idx
+        if np.any(class_mask):
+            class_data = X_train[class_mask]
+            class_mean = np.mean(class_data, axis=(0, 1))
+            class_means.append((class_idx, class_mean))
+    
+    # Calculate pairwise differences
+    if len(class_means) > 1:
+        differences = []
+        for i, (idx1, mean1) in enumerate(class_means):
+            for j, (idx2, mean2) in enumerate(class_means[i+1:], i+1):
+                diff = np.mean(np.abs(mean1 - mean2))
+                differences.append(diff)
+        
+        avg_diff = np.mean(differences)
+        min_diff = np.min(differences)
+        max_diff = np.max(differences)
+        
+        print(f"   Average difference between classes: {avg_diff:.6f}")
+        print(f"   Min difference: {min_diff:.6f}, Max difference: {max_diff:.6f}")
+        
+        if avg_diff < 0.01:
+            print("   ❌ PROBLEM: Classes are too similar after normalization!")
+            print("   This suggests normalization is removing important differences.")
+            print("   Solution: Try normalizing per sample or per time-step instead of globally.")
+        elif avg_diff < 0.1:
+            print("   ⚠️  WARNING: Classes are quite similar - model might struggle")
+        else:
+            print("   ✅ Classes have good separation")
     
     # Check if classes are different
     print("\nChecking if classes are distinguishable...")
