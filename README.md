@@ -1,81 +1,72 @@
 # Sign Language Recognition System
 
-Sign language recognition system using GRU Neural Network.
+Sign language recognition system using **CNN + LSTM** Neural Network.
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/MAya0M/SignLanguage-Recognition/blob/main/notebooks/SignLanguage_Training.ipynb)
 
 > **Fully Automatic!** Just click the button above, select GPU, and Run all. Everything will work automatically! 🚀
 
-> **✅ Production Ready!** The app is tested and deployed on Railway. All dependencies are configured for cloud deployment.
-
 ## 🚀 Quick Start
 
-### Option 1: Use Online App (Recommended!)
+### Train Model in Google Colab (Recommended!)
 
-**The app is ready to deploy!** Follow these steps:
-
-1. **Deploy to Railway (Free):**
-   - Go to [railway.app](https://railway.app)
-   - Sign in with GitHub
-   - Click "New Project" → "Deploy from GitHub repo"
-   - Select this repository
-   - Railway will auto-detect Flask app
-   - Click "Deploy" - **That's it!**
-   - Your app will be live at: `https://your-app-name.railway.app`
-
-2. **Or Deploy to Render (Free):**
-   - Go to [render.com](https://render.com)
-   - Sign in with GitHub
-   - Click "New" → "Web Service"
-   - Select this repository
-   - Build Command: `pip install -r requirements.txt`
-   - Start Command: `gunicorn app:app`
-   - Click "Create Web Service"
-
-**See [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md) for detailed instructions.**
-
-### Option 2: Train Model in Google Colab
-
-1. Click the "Open in Colab" button above ⬆️
-2. Runtime → Change runtime type → Select **GPU**
-3. Run all cells (Runtime → Run all)
+1. Click the **"Open in Colab"** button above ⬆️
+2. **Runtime → Change runtime type → Select GPU**
+3. **Runtime → Run all**
 
 **That's it!** The model will train automatically.
 
 ---
 
-## Project Structure
+## 📋 Project Structure
 
 ```
 SignLanguage-Recognition/
-├── Data/                    # Data
+├── Data/                    # Data directory
 │   ├── Keypoints/          # Extracted keypoints (.npy files)
 │   ├── Labels/             # CSV files with dataset splits
-│   ├── rawVideos/          # Original videos
-│   └── Sessions/           # Session videos
+│   └── rawVideos/          # Original videos
 ├── scripts/                # Main scripts
 │   ├── extract_keypoints.py      # Extract keypoints from videos
 │   ├── create_dataset_csv.py     # Create CSV dataset
-│   ├── train_model.py            # Train GRU model
+│   ├── prepare_for_training.py    # Prepare data for training
+│   ├── train_model.py            # Train CNN + LSTM model
 │   ├── predict.py                # Predict from videos
 │   ├── data_loader.py            # Data loading
-│   └── model_gru.py              # Model architecture
+│   └── model_cnn_lstm.py         # CNN + LSTM architecture
 ├── notebooks/              # Jupyter notebooks
 │   └── SignLanguage_Training.ipynb  # Automatic Colab notebook
-├── docs/                   # Documentation
-│   ├── README.md
-│   ├── README_MODEL.md
-│   ├── COLAB_UPLOAD_GUIDE.md
-│   └── ...
-├── models/                 # Trained models
-├── output/                 # Outputs (annotated videos, etc.)
-├── utils/                  # Utilities
+├── models/                 # Trained models (saved here)
+├── app.py                  # Flask web application
 └── requirements.txt        # Python dependencies
 ```
 
 ---
 
-## Local Installation
+## 🎯 How It Works
+
+### 1. Extract Keypoints
+- Uses MediaPipe to extract hand keypoints from videos
+- Normalizes keypoints (minimal normalization - only translation)
+- Saves as `.npy` files
+
+### 2. Create Dataset
+- Creates CSV file with video paths and labels
+- Splits into train/val/test sets
+
+### 3. Train Model
+- **CNN + LSTM architecture:**
+  - **CNN** - Recognizes spatial patterns (how keypoints are arranged)
+  - **LSTM** - Recognizes temporal patterns (how movement changes over time)
+- Trains on Google Colab with free GPU
+
+### 4. Predict
+- Upload video through web app
+- Or use command line: `python scripts/predict.py --model models/.../best_model.keras --video test.mp4`
+
+---
+
+## 💻 Local Installation
 
 ### 1. Clone Repository
 
@@ -96,95 +87,210 @@ venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 ```
 
----
-
-## Usage
-
-### Google Colab (Recommended!) ⭐
-
-**The easiest way:**
-1. Click [Open in Colab](https://colab.research.google.com/github/MAya0M/SignLanguage-Recognition/blob/main/notebooks/SignLanguage_Training.ipynb)
-2. Runtime → Change runtime type → **GPU**
-3. Run all cells
-
-**Or:**
-1. Open [Google Colab](https://colab.research.google.com)
-2. File → Open notebook → GitHub
-3. Enter: `MAya0M/SignLanguage-Recognition`
-4. Select: `notebooks/SignLanguage_Training.ipynb`
-
-### Local (if you have GPU)
+### 3. Prepare Data
 
 ```bash
-# 1. Extract keypoints
+# Extract keypoints from videos
 python scripts/extract_keypoints.py
 
-# 2. Create dataset
+# Create dataset CSV
 python scripts/create_dataset_csv.py
 
-# 3. Train model
-python scripts/train_model.py --csv Data/Labels/dataset.csv
+# Or use the all-in-one script
+python scripts/prepare_for_training.py
+```
 
-# 4. Run web app
+### 4. Train Model
+
+**Option A: Google Colab (Recommended!)**
+- Click "Open in Colab" button above
+- Select GPU and run all cells
+
+**Option B: Local (if you have GPU)**
+
+```bash
+python scripts/train_model.py \
+    --csv Data/Labels/dataset.csv \
+    --keypoints-dir Data/Keypoints/rawVideos \
+    --output-dir models \
+    --batch-size 8 \
+    --epochs 200 \
+    --cnn-filters 64 \
+    --lstm-units 128 \
+    --num-cnn-layers 2 \
+    --dropout 0.3 \
+    --learning-rate 0.001
+```
+
+### 5. Run Web App
+
+```bash
 python app.py
 # Open http://localhost:5000 and upload a video!
-
-# Or predict via command line
-python scripts/predict.py \
-    --model models/run_*/best_model.keras \
-    --video your_video.mp4
 ```
 
 ---
 
-## Features
+## 🎬 Using the Web App
 
-✅ **Web Application** - Upload video and get translation through browser! 🎬 **[Deploy Online Now!](#-quick-start)**  
-✅ **Advanced Normalization** - Invariant to hand position, size, and hand side (left/right)  
-✅ **Google Colab** - Free GPU, automatic training  
-✅ **GRU Model** - For recognizing sequences of hand movements  
-✅ **Video Prediction** - Predict directly from videos or keypoints  
-✅ **Automatic CI/CD** - GitHub Actions validates code on every push  
-✅ **Automatic Deployment Ready** - One-click deploy to Railway/Render/Heroku  
+1. **Start the app:**
+   ```bash
+   python app.py
+   ```
 
----
+2. **Open browser:** `http://localhost:5000`
 
-## Documentation
+3. **Upload video or use live camera:**
+   - Upload a video file
+   - Or click "Start Live Camera" for real-time recognition
 
-- **[Model Guide](docs/README_MODEL.md)** - Model details and training
-- **[Colab Guide](docs/COLAB_UPLOAD_GUIDE.md)** - How to upload data to Colab
-- **[Implementation Guide](docs/IMPLEMENTATION_GUIDE.md)** - Full implementation guide
-- **[Model Explanation](docs/MODEL_EXPLANATION.md)** - How the model works
-- **[Web App Guide](docs/APP_GUIDE.md)** - Web application for uploading videos
-- **[App README](README_APP.md)** - Quick start for the app
-- **[GitHub Actions Guide](docs/GITHUB_ACTIONS_EXPLAINED.md)** - What happens after workflow completes
-- **[Deployment Guide](docs/DEPLOYMENT_GUIDE.md)** - Deploy to production
+4. **Get predictions:**
+   - The app will show all recognized words from the video
 
 ---
 
-## Workflow
+## 📊 Model Architecture
 
-```bash
-# 1. Extract keypoints
-python scripts/extract_keypoints.py
+### CNN + LSTM Model
 
-# 2. Create dataset
-python scripts/create_dataset_csv.py
+**Why CNN + LSTM?**
+- **CNN** - Recognizes spatial patterns (how keypoints are arranged in each frame)
+- **LSTM** - Recognizes temporal patterns (how movement changes over time)
+- **Combined** - Better accuracy than GRU alone
 
-# 3. Train (Google Colab recommended!)
-# Click "Open in Colab" above
-
-# 4. Run web app
-python app.py
-# Open http://localhost:5000 and upload a video!
-
-# Or predict via command line
-python scripts/predict.py --model models/.../best_model.keras --video test.mp4
+**Architecture:**
+```
+Input (96 frames, 126 features)
+  ↓
+CNN Layers (spatial pattern recognition)
+  ├── Conv1D (64 filters) → BatchNorm → MaxPool → Dropout
+  └── Conv1D (128 filters) → BatchNorm → MaxPool → Dropout
+  ↓
+Global Average Pooling
+  ↓
+Bidirectional LSTM (128 units) - temporal pattern recognition
+  ↓
+Dense Layers
+  ├── Dense (128) → Dropout
+  └── Dense (64) → Dropout
+  ↓
+Output (8 classes)
 ```
 
 ---
 
-## Requirements
+## 📝 Adding New Videos
+
+1. **Add videos to `Data/rawVideos/[WordName]/`:**
+   ```
+   Data/rawVideos/
+   ├── Hello/
+   │   ├── Hello01.mp4
+   │   ├── Hello02.mp4
+   │   └── ...
+   ├── Yes/
+   │   ├── Yes01.mp4
+   │   └── ...
+   └── ...
+   ```
+
+2. **Extract keypoints:**
+   ```bash
+   python scripts/extract_keypoints.py
+   ```
+
+3. **Update CSV:**
+   ```bash
+   python scripts/create_dataset_csv.py
+   ```
+
+4. **Or use all-in-one:**
+   ```bash
+   python scripts/prepare_for_training.py
+   ```
+
+5. **Retrain model** (in Colab or locally)
+
+---
+
+## 🔧 Model Parameters
+
+Default parameters (optimized for small datasets):
+
+- **Batch size:** 8
+- **Epochs:** 200
+- **CNN filters:** 64 (first layer), 128 (second layer)
+- **LSTM units:** 128
+- **CNN layers:** 2
+- **Dropout:** 0.3
+- **Learning rate:** 0.001
+
+**To change parameters:**
+```bash
+python scripts/train_model.py \
+    --cnn-filters 128 \
+    --lstm-units 256 \
+    --num-cnn-layers 3 \
+    --dropout 0.4 \
+    --learning-rate 0.0005
+```
+
+---
+
+## 📦 Adding Trained Model to Project
+
+After training in Colab:
+
+1. **Download model from Colab:**
+   - Run the download cell in the notebook
+   - Or download from Google Drive
+
+2. **Extract model to project:**
+   ```bash
+   # Extract the zip file
+   unzip run_YYYYMMDD_HHMMSS.zip
+   
+   # Move to models directory
+   mv run_YYYYMMDD_HHMMSS models/
+   ```
+
+3. **Use in web app:**
+   - The app will automatically find the latest model in `models/run_*/best_model.keras`
+
+---
+
+## 🐛 Troubleshooting
+
+### Model stuck at 12.5% accuracy?
+
+**12.5% = 1/8 classes = random guessing**
+
+**Possible causes:**
+1. **Not enough data** - Need at least 20-30 videos per word
+2. **Normalization too aggressive** - Try minimal normalization (only translation)
+3. **Classes too similar** - Add more distinctive videos
+
+**Solutions:**
+1. Add more training videos (30-50 per word)
+2. Try re-extracting keypoints with minimal normalization:
+   ```bash
+   python scripts/re_extract_with_minimal_normalization.py
+   ```
+3. Check data quality - make sure videos are clear and consistent
+
+### Can't find model?
+
+- Make sure model is in `models/run_*/best_model.keras`
+- Check that `label_mapping.json` exists in the same directory
+
+### GPU not available?
+
+- Use Google Colab (free GPU!)
+- Or train on CPU (will be slower, 2-4 hours)
+
+---
+
+## 📚 Requirements
 
 - Python 3.8+
 - GPU (recommended for training) - Google Colab provides free GPU!
@@ -193,44 +299,35 @@ python scripts/predict.py --model models/.../best_model.keras --video test.mp4
 
 ---
 
-## License
+## 🚀 Deployment
+
+### Deploy Web App to Railway (Free)
+
+1. Go to [railway.app](https://railway.app)
+2. Sign in with GitHub
+3. Click "New Project" → "Deploy from GitHub repo"
+4. Select this repository
+5. Railway will auto-detect Flask app
+6. Click "Deploy" - **That's it!**
+
+Your app will be live at: `https://your-app-name.railway.app`
+
+**Note:** Make sure to train a model first and add it to the repository!
+
+---
+
+## 📄 License
 
 This project is for educational purposes.
 
 ---
 
-## Support
+## 🤝 Support
 
-For questions and issues, see the guides in `docs/`.
-
----
-
-## GitHub Actions
-
-Every push to GitHub automatically triggers:
-- ✅ Syntax checking
-- ✅ Import checking
-- ✅ Project structure validation
-
-For more details: see [docs/GITHUB_ACTIONS_EXPLAINED.md](docs/GITHUB_ACTIONS_EXPLAINED.md)
-
-## 🌐 View App Online
-
-**Your app is ready to deploy!** Get it online in 5 minutes:
-
-### Quick Deploy (Railway - Recommended):
-1. Go to [railway.app](https://railway.app) → Sign in with GitHub
-2. New Project → Deploy from GitHub repo
-3. Select this repository → Deploy
-4. **Done!** Your app will be live at `https://your-app.railway.app`
-
-**See [docs/QUICK_DEPLOY.md](docs/QUICK_DEPLOY.md) for step-by-step instructions.**
-
-### Other Options:
-- **Render:** [render.com](https://render.com) - Free tier available
-- **Heroku:** [heroku.com](https://heroku.com) - Free tier available
-
-**Note:** Make sure to train a model first! See [Training Guide](docs/README_MODEL.md) or use [Google Colab](https://colab.research.google.com/github/MAya0M/SignLanguage-Recognition/blob/main/notebooks/SignLanguage_Training.ipynb).
+For questions and issues:
+1. Check the troubleshooting section above
+2. Review the code comments
+3. Check Google Colab notebook for detailed steps
 
 ---
 

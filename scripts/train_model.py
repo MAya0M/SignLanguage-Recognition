@@ -1,5 +1,5 @@
 """
-Training script for GRU Sign Language Recognition Model
+Training script for CNN + LSTM Sign Language Recognition Model
 """
 
 import argparse
@@ -16,7 +16,7 @@ from pathlib import Path
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from scripts.data_loader import SignLanguageDataLoader
-from scripts.model_gru import build_gru_model, compile_model
+from scripts.model_cnn_lstm import build_cnn_lstm_model, compile_model
 
 
 def train_model(
@@ -25,15 +25,16 @@ def train_model(
     output_dir: str = "models",
     batch_size: int = 8,  # Smaller batch for better gradient updates
     epochs: int = 200,
-    gru_units: int = 128,  # Smaller model for small dataset
-    num_gru_layers: int = 2,  # Fewer layers
-    dropout_rate: float = 0.2,  # Less dropout to allow more learning
-    learning_rate: float = 0.002,  # Higher learning rate for faster learning
+    cnn_filters: int = 64,  # CNN filters
+    lstm_units: int = 128,  # LSTM units
+    num_cnn_layers: int = 2,  # Number of CNN layers
+    dropout_rate: float = 0.3,  # Dropout rate
+    learning_rate: float = 0.001,  # Learning rate
     patience: int = 10,
     validation_split: float = 0.0  # Not used, we have explicit val set
 ):
     """
-    Train the GRU model
+    Train the CNN + LSTM model
     
     Args:
         csv_path: Path to CSV file with dataset info
@@ -41,8 +42,9 @@ def train_model(
         output_dir: Directory to save model and training artifacts
         batch_size: Batch size for training
         epochs: Maximum number of epochs
-        gru_units: Number of units in GRU layers
-        num_gru_layers: Number of GRU layers
+        cnn_filters: Number of filters in CNN layers
+        lstm_units: Number of units in LSTM layer
+        num_cnn_layers: Number of CNN layers
         dropout_rate: Dropout rate
         learning_rate: Learning rate
         patience: Early stopping patience
@@ -57,15 +59,16 @@ def train_model(
     run_dir.mkdir(parents=True, exist_ok=True)
     
     print("="*60)
-    print("Sign Language Recognition - GRU Model Training")
+    print("Sign Language Recognition - CNN + LSTM Model Training")
     print("="*60)
     print(f"CSV path: {csv_path}")
     print(f"Keypoints directory: {keypoints_dir}")
     print(f"Output directory: {run_dir}")
     print(f"Batch size: {batch_size}")
     print(f"Epochs: {epochs}")
-    print(f"GRU units: {gru_units}")
-    print(f"GRU layers: {num_gru_layers}")
+    print(f"CNN filters: {cnn_filters}")
+    print(f"LSTM units: {lstm_units}")
+    print(f"CNN layers: {num_cnn_layers}")
     print(f"Dropout rate: {dropout_rate}")
     print(f"Learning rate: {learning_rate}")
     print("="*60 + "\n")
@@ -120,12 +123,13 @@ def train_model(
     print(f"  Input shape: {input_shape}")
     print(f"  Number of classes: {num_classes}")
     
-    model = build_gru_model(
+    model = build_cnn_lstm_model(
         input_shape=input_shape,
         num_classes=num_classes,
-        gru_units=gru_units,
+        cnn_filters=cnn_filters,
+        lstm_units=lstm_units,
         dropout_rate=dropout_rate,
-        num_gru_layers=num_gru_layers
+        num_cnn_layers=num_cnn_layers
     )
     
     model = compile_model(model, learning_rate=learning_rate)
@@ -249,8 +253,9 @@ def train_model(
     training_params = {
         'batch_size': batch_size,
         'epochs': epochs,
-        'gru_units': gru_units,
-        'num_gru_layers': num_gru_layers,
+        'cnn_filters': cnn_filters,
+        'lstm_units': lstm_units,
+        'num_cnn_layers': num_cnn_layers,
         'dropout_rate': dropout_rate,
         'learning_rate': learning_rate,
         'patience': patience,
@@ -272,21 +277,23 @@ def train_model(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Train GRU model for sign language recognition")
+    parser = argparse.ArgumentParser(description="Train CNN + LSTM model for sign language recognition")
     parser.add_argument("--csv", type=str, default="Data/Labels/dataset.csv",
                        help="Path to CSV file with dataset info")
     parser.add_argument("--keypoints-dir", type=str, default="Data/Keypoints/rawVideos",
                        help="Directory containing keypoint .npy files")
     parser.add_argument("--output-dir", type=str, default="models",
                        help="Directory to save model and training artifacts")
-    parser.add_argument("--batch-size", type=int, default=32,
+    parser.add_argument("--batch-size", type=int, default=8,
                        help="Batch size for training")
-    parser.add_argument("--epochs", type=int, default=100,
+    parser.add_argument("--epochs", type=int, default=200,
                        help="Maximum number of epochs")
-    parser.add_argument("--gru-units", type=int, default=128,
-                       help="Number of units in GRU layers")
-    parser.add_argument("--num-gru-layers", type=int, default=2,
-                       help="Number of GRU layers")
+    parser.add_argument("--cnn-filters", type=int, default=64,
+                       help="Number of filters in CNN layers")
+    parser.add_argument("--lstm-units", type=int, default=128,
+                       help="Number of units in LSTM layer")
+    parser.add_argument("--num-cnn-layers", type=int, default=2,
+                       help="Number of CNN layers")
     parser.add_argument("--dropout", type=float, default=0.3,
                        help="Dropout rate")
     parser.add_argument("--learning-rate", type=float, default=0.001,
@@ -302,8 +309,9 @@ if __name__ == "__main__":
         output_dir=args.output_dir,
         batch_size=args.batch_size,
         epochs=args.epochs,
-        gru_units=args.gru_units,
-        num_gru_layers=args.num_gru_layers,
+        cnn_filters=args.cnn_filters,
+        lstm_units=args.lstm_units,
+        num_cnn_layers=args.num_cnn_layers,
         dropout_rate=args.dropout,
         learning_rate=args.learning_rate,
         patience=args.patience
