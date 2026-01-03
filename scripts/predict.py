@@ -63,8 +63,8 @@ class SignLanguagePredictor:
         Returns:
             Preprocessed array with shape (1, max_length, features)
         """
-        # Normalize keypoints (same as training)
-        keypoints = normalize_keypoints(keypoints)
+        # Normalize keypoints (same as training - MINIMAL: only translate)
+        keypoints = normalize_keypoints(keypoints, minimal=True)
         
         # Flatten to (num_frames, features)
         num_frames = keypoints.shape[0]

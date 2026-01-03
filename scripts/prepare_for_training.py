@@ -45,8 +45,8 @@ def main():
         process_all_videos(
             raw_videos_dir, 
             keypoints_dir, 
-            skip_existing=True,  # Skip existing keypoints
-            overwrite=False      # Don't overwrite existing
+            skip_existing=False,  # Re-process all with new normalization
+            overwrite=True        # Overwrite existing with minimal normalization
         )
         
         print("✅ Keypoints extraction complete!")

@@ -32,16 +32,17 @@ def download_model_if_needed():
         print(f"Model downloaded to {MODEL_PATH}")
     return str(MODEL_PATH)
 
-def normalize_keypoints(keypoints_array):
+def normalize_keypoints(keypoints_array, minimal=False):
     """
     Advanced normalization for hand keypoints to make recognition invariant to:
     1. Hand position in frame (translation)
-    2. Hand size (scale)
-    3. Left/Right hand (mirror to consistent orientation)
-    4. Hand rotation in XY plane (align to consistent direction)
+    2. Hand size (scale) - only if minimal=False
+    3. Left/Right hand (mirror to consistent orientation) - only if minimal=False
+    4. Hand rotation in XY plane (align to consistent direction) - only if minimal=False
     
     Args:
         keypoints_array: numpy array with shape (num_frames, num_hands, 21, 3)
+        minimal: If True, only translate (no rotate/scale) - preserves more differences
     
     Returns:
         Normalized numpy array with same shape
@@ -70,6 +71,11 @@ def normalize_keypoints(keypoints_array):
             
             # Step 1: Translate so wrist is at (0, 0, 0)
             hand_keypoints = hand_keypoints - wrist
+            
+            # If minimal normalization, stop here (preserve size/rotation differences)
+            if minimal:
+                normalized[frame_idx, hand_idx, :, :] = hand_keypoints
+                continue
             
             # Step 2: Determine if left or right hand and flip if needed
             # Use the direction from wrist to index finger MCP to determine hand orientation
@@ -237,8 +243,9 @@ def extract_hand_keypoints_from_video(video_path, max_hands=2):
     # Convert to numpy array: (num_frames, num_hands, 21, 3)
     keypoints_array = np.array(all_keypoints)
     
-    # Normalize keypoints (translate wrist to origin, scale by hand size)
-    keypoints_array = normalize_keypoints(keypoints_array)
+    # Normalize keypoints - MINIMAL: only translate (no rotate/scale)
+    # This preserves size and rotation differences which help distinguish classes
+    keypoints_array = normalize_keypoints(keypoints_array, minimal=True)
     
     return keypoints_array
 
