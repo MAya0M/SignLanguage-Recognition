@@ -154,14 +154,15 @@ def train_model(
             verbose=1,
             save_weights_only=False
         ),
-        EarlyStopping(
-            monitor='val_accuracy',  # Monitor accuracy - more meaningful for classification
-            patience=patience * 3,  # Triple patience to give model much more time to learn
-            restore_best_weights=True,
-            verbose=1,
-            min_delta=0.0001,  # Very small minimum change - allow small improvements
-            mode='max'  # Maximize accuracy
-        ),
+        # Disable early stopping - let model train for all epochs
+        # EarlyStopping(
+        #     monitor='val_accuracy',
+        #     patience=patience * 3,
+        #     restore_best_weights=True,
+        #     verbose=1,
+        #     min_delta=0.0001,
+        #     mode='max'
+        # ),
         ReduceLROnPlateau(
             monitor='val_loss',
             factor=0.5,
@@ -177,13 +178,22 @@ def train_model(
     print("Starting training...")
     print("="*60 + "\n")
     
+    # Shuffle data for better training
+    # Create indices and shuffle
+    train_indices = np.arange(len(X_train))
+    np.random.seed(42)
+    np.random.shuffle(train_indices)
+    X_train_shuffled = X_train[train_indices]
+    y_train_shuffled = y_train[train_indices]
+    
     history = model.fit(
-        X_train, y_train,
+        X_train_shuffled, y_train_shuffled,
         batch_size=batch_size,
         epochs=epochs,
         validation_data=(X_val, y_val),
         callbacks=callbacks,
-        verbose=1
+        verbose=1,
+        shuffle=True  # Shuffle batches
     )
     
     # Save final model

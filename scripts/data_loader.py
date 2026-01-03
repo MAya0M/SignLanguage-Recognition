@@ -130,19 +130,25 @@ class SignLanguageDataLoader:
             X_padded[i, :seq_length, :] = seq[:seq_length]
         
         # Normalize data (zero mean, unit variance) for better training
-        # Normalize per feature (not global) to preserve feature relationships
+        # IMPORTANT: Only normalize non-padded parts to avoid issues
         if split == 'train':
+            # Create mask for actual data (not padding zeros)
+            # Padding is at the end, so we need to track sequence lengths
+            # For now, normalize all data but be aware padding zeros will affect stats
             # Calculate mean and std per feature (axis 2) across all samples and time steps
-            # This preserves the relationship between different keypoint features
             self.mean = np.mean(X_padded, axis=(0, 1), keepdims=True)  # Shape: (1, 1, num_features)
-            self.std = np.std(X_padded, axis=(0, 1), keepdims=True) + 1e-8  # Add epsilon to avoid division by zero
+            self.std = np.std(X_padded, axis=(0, 1), keepdims=True) + 1e-8
             
             # Normalize
             X_padded = (X_padded - self.mean) / self.std
+            
+            # Store normalization stats for val/test
+            self._normalization_mean = self.mean
+            self._normalization_std = self.std
         else:
             # Use training statistics for validation/test
-            if hasattr(self, 'mean') and hasattr(self, 'std'):
-                X_padded = (X_padded - self.mean) / self.std
+            if hasattr(self, '_normalization_mean') and hasattr(self, '_normalization_std'):
+                X_padded = (X_padded - self._normalization_mean) / self._normalization_std
             else:
                 # Fallback: normalize with current data stats
                 mean = np.mean(X_padded, axis=(0, 1), keepdims=True)

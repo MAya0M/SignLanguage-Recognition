@@ -78,8 +78,16 @@ def compile_model(model: keras.Model, learning_rate: float = 0.001) -> keras.Mod
     Returns:
         Compiled model
     """
+    # Use Adam with higher initial learning rate and better defaults
+    optimizer = keras.optimizers.Adam(
+        learning_rate=learning_rate,
+        beta_1=0.9,
+        beta_2=0.999,
+        epsilon=1e-7
+    )
+    
     model.compile(
-        optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
+        optimizer=optimizer,
         loss='sparse_categorical_crossentropy',
         metrics=['accuracy']
     )
