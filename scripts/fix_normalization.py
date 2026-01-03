@@ -9,11 +9,18 @@ from pathlib import Path
 import numpy as np
 
 # Fix path for Colab
-script_dir = Path(__file__).parent
-project_root = script_dir.parent
+try:
+    script_dir = Path(__file__).parent
+    project_root = script_dir.parent
+except NameError:
+    project_root = Path(os.getcwd())
+    if project_root.name == 'scripts':
+        project_root = project_root.parent
+
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+# Import after path is set
 from scripts.data_loader import SignLanguageDataLoader
 
 def check_data_differences():
