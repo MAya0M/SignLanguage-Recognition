@@ -31,20 +31,20 @@ def build_cnn_lstm_model(
         Compiled Keras model
     """
     inputs = keras.Input(shape=input_shape)
-    
-    # Reshape for 1D convolution: (batch, sequence_length, num_features, 1)
-    # This allows CNN to process spatial patterns in each frame
-    x = layers.Reshape((input_shape[0], input_shape[1], 1))(inputs)
+    # Input shape: (batch, sequence_length, num_features)
+    # Example: (batch, 96, 126)
     
     # CNN layers for spatial pattern recognition
-    # Each layer learns different spatial patterns in keypoints
+    # Conv1D works on the last dimension (features), preserving time dimension
+    # This learns spatial relationships between keypoints in each frame
+    x = inputs
     for i in range(num_cnn_layers):
-        # 1D Convolution over the feature dimension
-        # This learns spatial relationships between keypoints
+        # 1D Convolution over features dimension
+        # Input: (batch, time, features) -> Output: (batch, time, filters)
         x = layers.Conv1D(
             filters=cnn_filters * (2 ** i),  # Increase filters: 64, 128, ...
             kernel_size=3,
-            padding='same',
+            padding='same',  # Keep same time length
             activation='relu',
             name=f'conv1d_{i+1}'
         )(x)
@@ -52,20 +52,17 @@ def build_cnn_lstm_model(
         # Batch normalization for stable training
         x = layers.BatchNormalization(name=f'bn_{i+1}')(x)
         
-        # Max pooling to reduce dimensionality
+        # Max pooling reduces time dimension (not features!)
+        # This is OK - we still have temporal information, just less granular
+        # Input: (batch, time, filters) -> Output: (batch, time//2, filters)
         x = layers.MaxPooling1D(pool_size=2, name=f'pool_{i+1}')(x)
         
         # Dropout to prevent overfitting
         x = layers.Dropout(dropout_rate * 0.5, name=f'dropout_conv_{i+1}')(x)
     
-    # Global Average Pooling over time dimension
-    # This reduces (batch, time_steps, features) to (batch, features)
-    # After CNN layers, we have reduced time dimension, so we pool over it
-    x = layers.GlobalAveragePooling1D(name='global_avg_pool')(x)
-    
-    # Reshape for LSTM: (batch, 1, features)
-    # LSTM expects sequence input, so we create a single timestep
-    x = layers.Reshape((1, -1))(x)
+    # After CNN: x shape is (batch, reduced_time, cnn_features)
+    # Now LSTM processes the sequence of CNN outputs
+    # This captures temporal patterns in the spatial features
     
     # Bidirectional LSTM for temporal pattern recognition
     # Bidirectional = sees both past and future context
