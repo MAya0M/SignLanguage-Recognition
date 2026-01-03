@@ -155,11 +155,12 @@ def train_model(
             save_weights_only=False
         ),
         EarlyStopping(
-            monitor='val_loss',  # Monitor loss instead of accuracy for better convergence
-            patience=patience,
+            monitor='val_accuracy',  # Monitor accuracy - more meaningful for classification
+            patience=patience * 3,  # Triple patience to give model much more time to learn
             restore_best_weights=True,
             verbose=1,
-            min_delta=0.001  # Minimum change to qualify as improvement (increased)
+            min_delta=0.0001,  # Very small minimum change - allow small improvements
+            mode='max'  # Maximize accuracy
         ),
         ReduceLROnPlateau(
             monitor='val_loss',

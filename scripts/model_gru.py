@@ -32,12 +32,12 @@ def build_gru_model(
     inputs = keras.Input(shape=input_shape)
     
     # First GRU layer (return sequences for stacked layers)
-    # Use lower dropout for first layer to allow more information flow
+    # Use normal dropout - the issue might be too little regularization
     x = layers.GRU(
         gru_units,
         return_sequences=(num_gru_layers > 1),
-        dropout=dropout_rate * 0.5,  # Lower dropout for first layer
-        recurrent_dropout=recurrent_dropout * 0.5,
+        dropout=dropout_rate,
+        recurrent_dropout=recurrent_dropout,
         name='gru_1'
     )(inputs)
     
@@ -52,14 +52,12 @@ def build_gru_model(
             name=f'gru_{i}'
         )(x)
     
-    # Dense layers with batch normalization for better training
+    # Dense layers - removed batch normalization as it might interfere with small dataset
     x = layers.Dense(gru_units, activation='relu', name='dense_1')(x)
-    x = layers.BatchNormalization(name='bn_1')(x)
-    x = layers.Dropout(dropout_rate, name='dropout_1')(x)
+    x = layers.Dropout(dropout_rate * 0.7, name='dropout_1')(x)  # Slightly less dropout
     
     x = layers.Dense(gru_units // 2, activation='relu', name='dense_2')(x)
-    x = layers.BatchNormalization(name='bn_2')(x)
-    x = layers.Dropout(dropout_rate, name='dropout_2')(x)
+    x = layers.Dropout(dropout_rate * 0.7, name='dropout_2')(x)
     
     # Output layer
     outputs = layers.Dense(num_classes, activation='softmax', name='output')(x)
