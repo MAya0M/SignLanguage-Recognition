@@ -129,6 +129,22 @@ class SignLanguageDataLoader:
             seq_length = min(len(seq), self.max_length)
             X_padded[i, :seq_length, :] = seq[:seq_length]
         
+        # Normalize data (zero mean, unit variance) for better training
+        # Only normalize training data and use same stats for val/test
+        if split == 'train':
+            self.mean = np.mean(X_padded, axis=(0, 1), keepdims=True)
+            self.std = np.std(X_padded, axis=(0, 1), keepdims=True) + 1e-8  # Add small epsilon to avoid division by zero
+            X_padded = (X_padded - self.mean) / self.std
+        else:
+            # Use training statistics for validation/test
+            if hasattr(self, 'mean') and hasattr(self, 'std'):
+                X_padded = (X_padded - self.mean) / self.std
+            else:
+                # Fallback: normalize with current data stats
+                mean = np.mean(X_padded, axis=(0, 1), keepdims=True)
+                std = np.std(X_padded, axis=(0, 1), keepdims=True) + 1e-8
+                X_padded = (X_padded - mean) / std
+        
         print(f"Loaded {len(X_padded)} samples")
         print(f"X shape: {X_padded.shape}")
         print(f"y shape: {y.shape}")

@@ -51,10 +51,13 @@ def build_gru_model(
             name=f'gru_{i}'
         )(x)
     
-    # Dense layers
+    # Dense layers with batch normalization for better training
     x = layers.Dense(gru_units, activation='relu', name='dense_1')(x)
+    x = layers.BatchNormalization(name='bn_1')(x)
     x = layers.Dropout(dropout_rate, name='dropout_1')(x)
+    
     x = layers.Dense(gru_units // 2, activation='relu', name='dense_2')(x)
+    x = layers.BatchNormalization(name='bn_2')(x)
     x = layers.Dropout(dropout_rate, name='dropout_2')(x)
     
     # Output layer

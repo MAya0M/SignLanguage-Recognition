@@ -119,27 +119,30 @@ def train_model(
     with open(run_dir / "label_mapping.json", "w") as f:
         json.dump(label_mapping, f, indent=2)
     
-    # Callbacks
+    # Callbacks - improved for better training
     callbacks = [
         ModelCheckpoint(
             filepath=str(run_dir / "best_model.keras"),
             monitor='val_accuracy',
             save_best_only=True,
             mode='max',
-            verbose=1
+            verbose=1,
+            save_weights_only=False
         ),
         EarlyStopping(
-            monitor='val_accuracy',
+            monitor='val_loss',  # Monitor loss instead of accuracy for better convergence
             patience=patience,
             restore_best_weights=True,
-            verbose=1
+            verbose=1,
+            min_delta=0.0001  # Minimum change to qualify as improvement
         ),
         ReduceLROnPlateau(
             monitor='val_loss',
             factor=0.5,
-            patience=5,
-            min_lr=1e-7,
-            verbose=1
+            patience=8,  # More patience before reducing LR
+            min_lr=1e-8,  # Lower minimum learning rate
+            verbose=1,
+            cooldown=3  # Wait before resuming normal operation
         )
     ]
     
