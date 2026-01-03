@@ -32,6 +32,9 @@ output/*.mp4
 temp/
 *.pem
 
+# Large data files (upload to Google Drive instead)
+sign_language_data.tar.gz
+
 # Flask
 *.db
 instance/
