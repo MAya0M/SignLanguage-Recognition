@@ -3,14 +3,33 @@ Evaluate trained model and show prediction quality
 """
 
 import sys
+import os
 from pathlib import Path
 import numpy as np
 import json
-from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.metrics import (
+    classification_report, 
+    confusion_matrix, 
+    precision_score, 
+    recall_score, 
+    f1_score,
+    accuracy_score
+)
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from scripts.data_loader import SignLanguageDataLoader
-from tensorflow import keras
+# Fix path for Colab
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+try:
+    from scripts.data_loader import SignLanguageDataLoader
+    from tensorflow import keras
+except ImportError as e:
+    print(f"❌ Error importing modules: {e}")
+    print(f"   Current directory: {os.getcwd()}")
+    print(f"   Make sure you're running from the project root directory")
+    sys.exit(1)
 
 def evaluate_model(model_path: str, csv_path: str, keypoints_dir: str):
     """Evaluate model and show detailed metrics"""

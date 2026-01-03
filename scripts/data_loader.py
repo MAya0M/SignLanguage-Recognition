@@ -125,32 +125,71 @@ class SignLanguageDataLoader:
         num_features = X[0].shape[1] if len(X) > 0 else 126
         X_padded = np.zeros((num_samples, self.max_length, num_features), dtype='float32')
         
+        # Store actual sequence lengths for normalization
+        seq_lengths = []
         for i, seq in enumerate(X):
             seq_length = min(len(seq), self.max_length)
             X_padded[i, :seq_length, :] = seq[:seq_length]
+            seq_lengths.append(seq_length)
         
         # Normalize data (zero mean, unit variance) for better training
-        # IMPORTANT: Only normalize non-padded parts to avoid issues
+        # CRITICAL: Exclude padding zeros from normalization statistics!
         if split == 'train':
-            # Create mask for actual data (not padding zeros)
-            # Padding is at the end, so we need to track sequence lengths
-            # For now, normalize all data but be aware padding zeros will affect stats
-            # Calculate mean and std per feature (axis 2) across all samples and time steps
-            self.mean = np.mean(X_padded, axis=(0, 1), keepdims=True)  # Shape: (1, 1, num_features)
-            self.std = np.std(X_padded, axis=(0, 1), keepdims=True) + 1e-8
+            # Calculate mean and std only from non-zero (non-padded) data
+            # Create a mask: True for actual data, False for padding
+            # We'll use a simple heuristic: if a feature is all zeros across time, it's likely padding
+            # But better: track actual sequence lengths and only normalize those parts
             
-            # Normalize
-            X_padded = (X_padded - self.mean) / self.std
+            # Method: Calculate stats only from non-zero regions
+            # For each sample, find where actual data ends (where all features become zero)
+            # Actually, simpler: use variance to detect padding - padding has zero variance
+            # But even simpler: normalize per feature, ignoring zeros
             
-            # Store normalization stats for val/test
-            self._normalization_mean = self.mean
-            self._normalization_std = self.std
+            # Calculate mean and std per feature, but only from non-zero values
+            # This is more complex, so let's use a simpler approach:
+            # Normalize per feature across all non-padded time steps
+            
+            # Use stored sequence lengths
+            max_actual_length = max(seq_lengths) if seq_lengths else self.max_length
+            
+            # Calculate stats only from actual data (not padding)
+            # For each sample, only use data up to its actual length
+            non_padded_data = []
+            for i, seq_len in enumerate(seq_lengths):
+                non_padded_data.append(X_padded[i, :seq_len, :])
+            
+            if non_padded_data:
+                # Concatenate all non-padded data
+                all_non_padded = np.concatenate(non_padded_data, axis=0)  # Shape: (total_frames, features)
+                
+                # Calculate mean and std per feature
+                self.mean = np.mean(all_non_padded, axis=0, keepdims=True)  # Shape: (1, num_features)
+                self.std = np.std(all_non_padded, axis=0, keepdims=True) + 1e-8  # Shape: (1, num_features)
+                
+                # Reshape for broadcasting: (1, 1, num_features)
+                self.mean = self.mean.reshape(1, 1, -1)
+                self.std = self.std.reshape(1, 1, -1)
+                
+                # Normalize all data (including padding, but stats are from non-padded)
+                X_padded = (X_padded - self.mean) / self.std
+                
+                # Store normalization stats for val/test
+                self._normalization_mean = self.mean
+                self._normalization_std = self.std
+            else:
+                # Fallback to old method if no data
+                self.mean = np.mean(X_padded, axis=(0, 1), keepdims=True)
+                self.std = np.std(X_padded, axis=(0, 1), keepdims=True) + 1e-8
+                X_padded = (X_padded - self.mean) / self.std
+                self._normalization_mean = self.mean
+                self._normalization_std = self.std
         else:
             # Use training statistics for validation/test
             if hasattr(self, '_normalization_mean') and hasattr(self, '_normalization_std'):
                 X_padded = (X_padded - self._normalization_mean) / self._normalization_std
             else:
-                # Fallback: normalize with current data stats
+                # Fallback: normalize with current data stats (shouldn't happen)
+                print("⚠️  WARNING: Using fallback normalization for validation/test")
                 mean = np.mean(X_padded, axis=(0, 1), keepdims=True)
                 std = np.std(X_padded, axis=(0, 1), keepdims=True) + 1e-8
                 X_padded = (X_padded - mean) / std
