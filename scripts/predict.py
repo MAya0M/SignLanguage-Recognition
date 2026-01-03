@@ -132,13 +132,149 @@ class SignLanguagePredictor:
             }
         }
     
-    def predict_from_video(self, video_path: str, max_hands: int = 2) -> dict:
+    def detect_word_boundaries(self, keypoints: np.ndarray, min_frames_per_word: int = 10, 
+                               movement_threshold: float = 0.02) -> list:
+        """
+        Detect boundaries between words by analyzing hand movement
+        
+        Args:
+            keypoints: Keypoints array with shape (num_frames, 2, 21, 3)
+            min_frames_per_word: Minimum frames for a valid word segment
+            movement_threshold: Threshold for detecting stillness (end of word)
+            
+        Returns:
+            List of (start_frame, end_frame) tuples for each word segment
+        """
+        num_frames = keypoints.shape[0]
+        if num_frames < min_frames_per_word:
+            return [(0, num_frames)]
+        
+        # Calculate movement between consecutive frames
+        movements = []
+        for i in range(1, num_frames):
+            # Calculate distance between frames (using wrist position as reference)
+            frame_diff = np.abs(keypoints[i] - keypoints[i-1])
+            movement = np.mean(frame_diff)
+            movements.append(movement)
+        
+        if len(movements) == 0:
+            return [(0, num_frames)]
+        
+        movements = np.array(movements)
+        
+        # Find frames with low movement (potential word boundaries)
+        # Use a sliding window to smooth movement detection
+        window_size = min(5, len(movements) // 4)
+        if window_size < 1:
+            window_size = 1
+        
+        smoothed_movements = []
+        for i in range(len(movements)):
+            start = max(0, i - window_size // 2)
+            end = min(len(movements), i + window_size // 2 + 1)
+            smoothed_movements.append(np.mean(movements[start:end]))
+        
+        smoothed_movements = np.array(smoothed_movements)
+        threshold = np.percentile(smoothed_movements, 30)  # Bottom 30% = stillness
+        
+        # Find boundaries (low movement areas)
+        boundaries = [0]
+        in_stillness = False
+        stillness_start = None
+        
+        for i, movement in enumerate(smoothed_movements):
+            if movement < threshold:
+                if not in_stillness:
+                    in_stillness = True
+                    stillness_start = i + 1  # +1 because movements start from frame 1
+            else:
+                if in_stillness and stillness_start is not None:
+                    # End of stillness - potential boundary
+                    boundary = (stillness_start + i + 1) // 2
+                    if boundary - boundaries[-1] >= min_frames_per_word:
+                        boundaries.append(boundary)
+                    in_stillness = False
+                    stillness_start = None
+        
+        boundaries.append(num_frames)
+        
+        # Create segments
+        segments = []
+        for i in range(len(boundaries) - 1):
+            start = boundaries[i]
+            end = boundaries[i + 1]
+            if end - start >= min_frames_per_word:
+                segments.append((start, end))
+        
+        # If no segments found, return the whole video
+        if len(segments) == 0:
+            segments = [(0, num_frames)]
+        
+        return segments
+    
+    def predict_multiple_words(self, keypoints: np.ndarray, min_confidence: float = 0.1,
+                               segment_method: str = 'auto') -> list:
+        """
+        Predict multiple words from a video by segmenting it
+        
+        Args:
+            keypoints: Keypoints array with shape (num_frames, 2, 21, 3)
+            min_confidence: Minimum confidence to include a prediction
+            segment_method: 'auto' (detect boundaries) or 'sliding' (sliding window)
+            
+        Returns:
+            List of dictionaries with predictions for each word segment
+        """
+        num_frames = keypoints.shape[0]
+        max_length = self.input_shape[0]
+        
+        if segment_method == 'auto':
+            # Detect word boundaries
+            segments = self.detect_word_boundaries(keypoints)
+        else:
+            # Sliding window approach
+            window_size = max_length
+            step_size = window_size // 2
+            segments = []
+            for start in range(0, num_frames, step_size):
+                end = min(start + window_size, num_frames)
+                if end - start >= max_length // 2:  # Minimum segment size
+                    segments.append((start, end))
+        
+        predictions = []
+        
+        for seg_idx, (start, end) in enumerate(segments):
+            segment_keypoints = keypoints[start:end]
+            
+            # Predict for this segment
+            try:
+                result = self.predict_from_keypoints(segment_keypoints)
+                
+                # Only include if confidence is high enough
+                if result['confidence'] >= min_confidence:
+                    predictions.append({
+                        'word': result['prediction'],
+                        'confidence': result['confidence'],
+                        'start_frame': int(start),
+                        'end_frame': int(end),
+                        'segment_index': seg_idx,
+                        'all_predictions': result.get('all_predictions', {})
+                    })
+            except Exception as e:
+                print(f"Warning: Failed to predict segment {seg_idx}: {e}")
+                continue
+        
+        return predictions
+    
+    def predict_from_video(self, video_path: str, max_hands: int = 2, 
+                         detect_multiple_words: bool = True) -> dict:
         """
         Predict from video file
         
         Args:
             video_path: Path to video file
             max_hands: Maximum number of hands to detect
+            detect_multiple_words: If True, detect multiple words in the video
             
         Returns:
             Dictionary with prediction results
@@ -153,8 +289,62 @@ class SignLanguagePredictor:
         
         print(f"Extracted {len(keypoints)} frames")
         
-        # Predict
-        return self.predict_from_keypoints(keypoints)
+        if detect_multiple_words:
+            # For short videos (like live chunks), treat as single word
+            # For longer videos, try to detect multiple words
+            num_frames = len(keypoints)
+            max_length = self.input_shape[0]
+            
+            # If video is short (less than 1.5x max_length), treat as single word
+            if num_frames < max_length * 1.5:
+                # Short video - single prediction
+                result = self.predict_from_keypoints(keypoints)
+                return {
+                    'prediction': result['prediction'],
+                    'confidence': result['confidence'],
+                    'all_predictions': result.get('all_predictions', {}),
+                    'words': [{
+                        'word': result['prediction'],
+                        'confidence': result['confidence'],
+                        'start_frame': 0,
+                        'end_frame': num_frames
+                    }],
+                    'multiple_words_detected': False,
+                    'word_count': 1
+                }
+            else:
+                # Long video - detect multiple words
+                words = self.predict_multiple_words(keypoints, min_confidence=0.1)
+                
+                if len(words) == 0:
+                    # Fallback to single prediction
+                    result = self.predict_from_keypoints(keypoints)
+                    return {
+                        'prediction': result['prediction'],
+                        'confidence': result['confidence'],
+                        'all_predictions': result.get('all_predictions', {}),
+                        'words': [{
+                            'word': result['prediction'],
+                            'confidence': result['confidence'],
+                            'start_frame': 0,
+                            'end_frame': num_frames
+                        }],
+                        'multiple_words_detected': False,
+                        'word_count': 1
+                    }
+                
+                # Return all words
+                return {
+                    'prediction': words[0]['word'],  # First word for backward compatibility
+                    'confidence': words[0]['confidence'],
+                    'all_predictions': words[0].get('all_predictions', {}),
+                    'words': words,
+                    'multiple_words_detected': True,
+                    'word_count': len(words)
+                }
+        else:
+            # Single prediction (original behavior)
+            return self.predict_from_keypoints(keypoints)
     
     def predict_from_npy(self, npy_path: str) -> dict:
         """

@@ -169,6 +169,44 @@
             opacity: 0.9;
         }
 
+        .words-list {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .words-list.show {
+            display: block;
+        }
+
+        .words-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .word-item {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 12px 20px;
+            margin: 8px 0;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .word-item .word-text {
+            font-size: 1.5em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .word-item .word-confidence {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
         .loading {
             display: none;
             text-align: center;
@@ -224,12 +262,143 @@
             width: 100%;
             max-height: 300px;
         }
+
+        .mode-switcher {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .mode-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .mode-section {
+            display: none;
+        }
+
+        .mode-section.active {
+            display: block;
+        }
+
+        .live-video-container {
+            position: relative;
+            border-radius: 15px;
+            overflow: hidden;
+            background: #000;
+            margin-bottom: 20px;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .live-video-container video {
+            width: 100%;
+            height: auto;
+            max-height: 500px;
+            display: block;
+            object-fit: contain;
+            background: #000;
+            transform: scaleX(-1); /* Mirror the video for better UX */
+        }
+
+        .live-video-container::before {
+            content: '📹 Click "Start Live Recognition" to begin';
+            position: absolute;
+            color: #fff;
+            font-size: 1.2em;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .live-video-container.has-video::before {
+            display: none;
+        }
+
+        .live-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .live-status {
+            text-align: center;
+            padding: 10px;
+            background: #f0f2ff;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .live-status.recording {
+            background: #ffebee;
+            color: #c62828;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .live-prediction {
+            margin-top: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            border-radius: 15px;
+            text-align: center;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            display: none;
+        }
+
+        .live-prediction.show {
+            display: flex;
+        }
+
+        .live-prediction-word {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .live-prediction-confidence {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🎬 Sign Language Recognition</h1>
-        <p class="subtitle">Upload a sign language video and get English translation</p>
+        <p class="subtitle">Upload a video or use live camera to translate sign language</p>
 
         {% if not has_model %}
         <div class="warning">
@@ -237,26 +406,60 @@
         </div>
         {% endif %}
 
-        <div class="upload-area" id="uploadArea">
-            <div class="upload-icon">📹</div>
-            <div class="upload-text">Drag and drop video here</div>
-            <div class="upload-hint">or click to select file</div>
-            <div class="upload-hint" style="margin-top: 10px;">MP4, AVI, MOV, MKV, WEBM</div>
+        <div class="mode-switcher">
+            <button class="mode-btn active" onclick="switchMode('upload')">📁 Upload Video</button>
+            <button class="mode-btn" onclick="switchMode('live')">📹 Live Camera</button>
         </div>
 
-        <input type="file" id="videoInput" accept="video/*">
+        <!-- Upload Mode -->
+        <div class="mode-section active" id="uploadMode">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📹</div>
+                <div class="upload-text">Drag and drop video here</div>
+                <div class="upload-hint">or click to select file</div>
+                <div class="upload-hint" style="margin-top: 10px;">MP4, AVI, MOV, MKV, WEBM</div>
+            </div>
 
-        <div class="file-info" id="fileInfo">
-            <div class="file-name" id="fileName"></div>
+            <input type="file" id="videoInput" accept="video/*">
+
+            <div class="file-info" id="fileInfo">
+                <div class="file-name" id="fileName"></div>
+            </div>
+
+            <div class="video-preview" id="videoPreview">
+                <video id="previewVideo" controls></video>
+            </div>
+
+            <button class="btn" id="predictBtn" onclick="predict()" disabled>
+                🚀 Recognize Sign Language
+            </button>
         </div>
 
-        <div class="video-preview" id="videoPreview">
-            <video id="previewVideo" controls></video>
-        </div>
+        <!-- Live Mode -->
+        <div class="mode-section" id="liveMode">
+            <div class="live-video-container">
+                <video id="liveVideo" autoplay playsinline muted></video>
+            </div>
+            
+            <div class="live-controls">
+                <button class="btn" id="startLiveBtn" onclick="startLiveCapture()">
+                    🎥 Start Live Recognition
+                </button>
+                <button class="btn" id="stopLiveBtn" onclick="stopLiveCapture()" style="display: none; background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);">
+                    ⏹ Stop
+                </button>
+            </div>
 
-        <button class="btn" id="predictBtn" onclick="predict()" disabled>
-            🚀 Recognize Sign Language
-        </button>
+            <div class="live-status" id="liveStatus">Ready to start</div>
+
+            <div class="live-prediction" id="livePrediction">
+                <div class="live-prediction-word" id="livePredictionWord"></div>
+                <div class="live-prediction-confidence" id="livePredictionConfidence"></div>
+                <div class="live-words-list" id="liveWordsList">
+                    <div id="liveWordsContainer"></div>
+                </div>
+            </div>
+        </div>
 
         <div class="loading" id="loading">
             <div class="spinner"></div>
@@ -267,6 +470,10 @@
             <div class="result-title" id="resultTitle"></div>
             <div class="prediction" id="prediction"></div>
             <div class="confidence" id="confidence"></div>
+            <div class="words-list" id="wordsList">
+                <div class="words-title" id="wordsTitle"></div>
+                <div id="wordsContainer"></div>
+            </div>
         </div>
     </div>
 
@@ -281,7 +488,26 @@
         const videoPreview = document.getElementById('videoPreview');
         const previewVideo = document.getElementById('previewVideo');
 
+        // Live mode elements
+        const liveVideo = document.getElementById('liveVideo');
+        const startLiveBtn = document.getElementById('startLiveBtn');
+        const stopLiveBtn = document.getElementById('stopLiveBtn');
+        const liveStatus = document.getElementById('liveStatus');
+        const livePrediction = document.getElementById('livePrediction');
+        const livePredictionWord = document.getElementById('livePredictionWord');
+        const livePredictionConfidence = document.getElementById('livePredictionConfidence');
+
         let selectedFile = null;
+        let liveStream = null;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let isRecording = false;
+        let frameBuffer = [];
+        let processingInterval = null;
+        let canvas = null;
+        let ctx = null;
+        let allDetectedWords = []; // Track all words detected during live session
+        let isProcessing = false; // Prevent multiple simultaneous requests
 
         // Click to select file
         uploadArea.addEventListener('click', () => {
@@ -370,9 +596,40 @@
         function showSuccess(data) {
             result.className = 'result success show';
             document.getElementById('resultTitle').textContent = '✅ Recognition Complete!';
-            document.getElementById('prediction').textContent = data.prediction;
-            document.getElementById('confidence').textContent = 
-                `Confidence: ${(data.confidence * 100).toFixed(1)}%`;
+            
+            // Show all words if multiple words detected
+            const wordsList = document.getElementById('wordsList');
+            const wordsContainer = document.getElementById('wordsContainer');
+            const wordsTitle = document.getElementById('wordsTitle');
+            
+            if (data.words && data.words.length > 0 && data.multiple_words_detected) {
+                // Show multiple words
+                wordsTitle.textContent = `זוהו ${data.word_count} מילים:`;
+                wordsContainer.innerHTML = '';
+                
+                data.words.forEach((wordData, index) => {
+                    const wordDiv = document.createElement('div');
+                    wordDiv.className = 'word-item';
+                    wordDiv.innerHTML = `
+                        <span class="word-text">${index + 1}. ${wordData.word}</span>
+                        <span class="word-confidence">${(wordData.confidence * 100).toFixed(1)}%</span>
+                    `;
+                    wordsContainer.appendChild(wordDiv);
+                });
+                
+                wordsList.classList.add('show');
+                
+                // Show first word as main prediction
+                document.getElementById('prediction').textContent = data.words.map(w => w.word).join(' ');
+                document.getElementById('confidence').textContent = 
+                    `זוהו ${data.word_count} מילים בסך הכל`;
+            } else {
+                // Single word (backward compatibility)
+                wordsList.classList.remove('show');
+                document.getElementById('prediction').textContent = data.prediction;
+                document.getElementById('confidence').textContent = 
+                    `Confidence: ${(data.confidence * 100).toFixed(1)}%`;
+            }
         }
 
         function showError(message) {
@@ -381,6 +638,341 @@
             document.getElementById('prediction').textContent = message;
             document.getElementById('confidence').textContent = '';
         }
+
+        // Mode switching
+        function switchMode(mode) {
+            // Update buttons
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if ((mode === 'upload' && btn.textContent.includes('Upload')) ||
+                    (mode === 'live' && btn.textContent.includes('Live'))) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Show/hide sections
+            document.getElementById('uploadMode').classList.toggle('active', mode === 'upload');
+            document.getElementById('liveMode').classList.toggle('active', mode === 'live');
+
+            // Stop live capture if switching away
+            if (mode === 'upload' && isRecording) {
+                stopLiveCapture();
+            }
+        }
+
+        // Live capture functions
+        async function startLiveCapture() {
+            try {
+                // Check if getUserMedia is available
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('Camera API not supported in this browser. Please use Chrome, Firefox, or Edge.');
+                }
+                
+                liveStatus.textContent = '⏳ Requesting camera access...';
+                
+                // Request camera access
+                liveStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'user'
+                    }, 
+                    audio: false 
+                });
+                
+                console.log('Camera stream obtained:', liveStream);
+                console.log('Video tracks:', liveStream.getVideoTracks());
+                
+                // Check if we have active video tracks
+                const videoTracks = liveStream.getVideoTracks();
+                if (videoTracks.length === 0) {
+                    throw new Error('No video tracks available');
+                }
+                console.log('Active video track:', videoTracks[0].label, 'enabled:', videoTracks[0].enabled);
+
+                // Set video source and ensure it plays
+                liveVideo.srcObject = liveStream;
+                liveVideo.muted = true; // Required for autoplay in some browsers
+                
+                // Mark container as having video
+                liveVideo.parentElement.classList.add('has-video');
+                
+                // Add event listeners to ensure video plays
+                liveVideo.onloadedmetadata = () => {
+                    console.log('Video metadata loaded, dimensions:', liveVideo.videoWidth, 'x', liveVideo.videoHeight);
+                    liveVideo.play().catch(err => console.error('Play error:', err));
+                };
+                
+                liveVideo.onplay = () => {
+                    console.log('Video is playing');
+                    liveStatus.textContent = '✅ Camera active - Recording...';
+                };
+                
+                liveVideo.onerror = (e) => {
+                    console.error('Video error:', e);
+                    liveStatus.textContent = '❌ Video error occurred';
+                };
+                
+                // Force video to play immediately
+                try {
+                    await liveVideo.play();
+                    console.log('Video started playing immediately');
+                } catch (playError) {
+                    console.warn('Auto-play failed, will retry:', playError);
+                    // Wait a bit and try again
+                    setTimeout(async () => {
+                        try {
+                            await liveVideo.play();
+                            console.log('Video started playing after retry');
+                        } catch (e) {
+                            console.error('Failed to play video after retry:', e);
+                        }
+                    }, 500);
+                }
+                
+                // Ensure video is visible
+                liveVideo.style.display = 'block';
+                liveVideo.style.visibility = 'visible';
+
+                // Create canvas for frame capture
+                canvas = document.createElement('canvas');
+                // Wait a bit for video dimensions to be available
+                await new Promise(resolve => setTimeout(resolve, 100));
+                canvas.width = liveVideo.videoWidth || 640;
+                canvas.height = liveVideo.videoHeight || 480;
+                ctx = canvas.getContext('2d');
+
+                // Initialize MediaRecorder for video chunks
+                const options = { mimeType: 'video/webm;codecs=vp9' };
+                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                    options.mimeType = 'video/webm;codecs=vp8';
+                }
+                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                    options.mimeType = 'video/webm';
+                }
+
+                mediaRecorder = new MediaRecorder(liveStream, options);
+                recordedChunks = [];
+                frameBuffer = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    processVideoChunk();
+                };
+
+                // Start recording
+                isRecording = true;
+                isProcessing = false;
+                allDetectedWords = []; // Reset words list
+                startLiveBtn.style.display = 'none';
+                stopLiveBtn.style.display = 'block';
+                liveStatus.textContent = '🔴 Recording...';
+                liveStatus.classList.add('recording');
+                livePrediction.classList.remove('show');
+                // Clear words list
+                const liveWordsContainer = document.getElementById('liveWordsContainer');
+                if (liveWordsContainer) {
+                    liveWordsContainer.innerHTML = '';
+                }
+
+                // Record chunks every 2 seconds (slightly longer for better word detection)
+                processingInterval = setInterval(() => {
+                    if (!isRecording) {
+                        clearInterval(processingInterval);
+                        return;
+                    }
+                    
+                    if (mediaRecorder.state === 'recording') {
+                        mediaRecorder.stop();
+                    }
+                    if (mediaRecorder.state === 'inactive') {
+                        recordedChunks = [];
+                        mediaRecorder.start();
+                    }
+                }, 2000); // 2 seconds for better word detection
+
+                mediaRecorder.start();
+
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                let errorMsg = 'Could not access camera: ';
+                if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                    errorMsg += 'Please allow camera access in your browser settings.';
+                } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+                    errorMsg += 'No camera found. Please connect a camera.';
+                } else {
+                    errorMsg += error.message;
+                }
+                liveStatus.textContent = '❌ ' + errorMsg;
+                liveStatus.classList.remove('recording');
+                startLiveBtn.style.display = 'block';
+                stopLiveBtn.style.display = 'none';
+            }
+        }
+
+        function stopLiveCapture() {
+            isRecording = false;
+
+            if (processingInterval) {
+                clearInterval(processingInterval);
+                processingInterval = null;
+            }
+
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+
+            if (liveStream) {
+                liveStream.getTracks().forEach(track => track.stop());
+                liveStream = null;
+            }
+
+            liveVideo.srcObject = null;
+            liveVideo.parentElement.classList.remove('has-video');
+            startLiveBtn.style.display = 'block';
+            stopLiveBtn.style.display = 'none';
+            liveStatus.textContent = 'Ready to start';
+            liveStatus.classList.remove('recording');
+            livePrediction.classList.remove('show');
+            isProcessing = false;
+            // Clear words list
+            const liveWordsContainer = document.getElementById('liveWordsContainer');
+            if (liveWordsContainer) {
+                liveWordsContainer.innerHTML = '';
+            }
+            allDetectedWords = [];
+        }
+
+        async function processVideoChunk() {
+            if (recordedChunks.length === 0 || !isRecording) return;
+            
+            // Prevent multiple simultaneous requests
+            if (isProcessing) {
+                console.log('Already processing, skipping...');
+                return;
+            }
+            
+            isProcessing = true;
+
+            try {
+                // Create blob from chunks
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const formData = new FormData();
+                formData.append('video', blob, 'live_chunk.webm');
+
+                // Send to backend
+                const response = await fetch('/predict-live', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success && isRecording) {
+                    const liveWordsContainer = document.getElementById('liveWordsContainer');
+                    const timestamp = new Date().toLocaleTimeString();
+                    
+                    // Process words - always show the latest prediction
+                    let wordsToAdd = [];
+                    
+                    // Always use words array if available, otherwise use single prediction
+                    if (data.words && data.words.length > 0) {
+                        wordsToAdd = data.words;
+                    } else {
+                        // Single word - treat as one word
+                        wordsToAdd = [{
+                            word: data.prediction,
+                            confidence: data.confidence
+                        }];
+                    }
+                    
+                    // Add each word (even if similar, to show progression)
+                    wordsToAdd.forEach((wordData) => {
+                        // Only add if confidence is above threshold (lowered for live detection)
+                        if (wordData.confidence >= 0.05) { // 5% minimum confidence for live (very permissive)
+                            // Check if this is a new word (different from last few words)
+                            const lastFewWords = allDetectedWords.slice(-3).map(w => w.word);
+                            const isNewWord = lastFewWords.length === 0 || 
+                                            !lastFewWords.includes(wordData.word) ||
+                                            (wordData.confidence > 0.3); // High confidence always adds
+                            
+                            if (isNewWord || wordData.confidence > 0.2) {
+                                // Add word with timestamp to track sequence
+                                const wordEntry = {
+                                    word: wordData.word,
+                                    confidence: wordData.confidence,
+                                    timestamp: timestamp
+                                };
+                                
+                                // Add to our tracking list
+                                allDetectedWords.push(wordEntry);
+                                
+                                // Create visual element
+                                const wordDiv = document.createElement('div');
+                                wordDiv.className = 'live-word-item';
+                                wordDiv.innerHTML = `
+                                    <span class="live-word-text">${wordData.word}</span>
+                                    <span class="live-word-confidence">${(wordData.confidence * 100).toFixed(1)}%</span>
+                                `;
+                                
+                                // Add to container
+                                if (liveWordsContainer) {
+                                    liveWordsContainer.appendChild(wordDiv);
+                                    
+                                    // Scroll to bottom to show latest
+                                    const wordsList = liveWordsContainer.parentElement;
+                                    if (wordsList) {
+                                        wordsList.scrollTop = wordsList.scrollHeight;
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Always update main display with latest word (highest confidence from current chunk)
+                    if (wordsToAdd.length > 0) {
+                        const latestWord = wordsToAdd.reduce((prev, current) => 
+                            (current.confidence > prev.confidence) ? current : prev
+                        );
+                        
+                        // Always update display, even if word is the same
+                        livePredictionWord.textContent = latestWord.word;
+                        
+                        // Show total words detected
+                        const uniqueWords = [...new Set(allDetectedWords.map(w => w.word))];
+                        livePredictionConfidence.textContent = 
+                            `Confidence: ${(latestWord.confidence * 100).toFixed(1)}% | Total: ${allDetectedWords.length} words (${uniqueWords.length} unique)`;
+                    } else if (allDetectedWords.length > 0) {
+                        // No words in this chunk, but keep showing previous
+                        const lastWord = allDetectedWords[allDetectedWords.length - 1];
+                        livePredictionWord.textContent = lastWord.word;
+                        const uniqueWords = [...new Set(allDetectedWords.map(w => w.word))];
+                        livePredictionConfidence.textContent = 
+                            `Confidence: ${(lastWord.confidence * 100).toFixed(1)}% | Total: ${allDetectedWords.length} words (${uniqueWords.length} unique)`;
+                    }
+                    
+                    livePrediction.classList.add('show');
+                } else if (!data.success) {
+                    console.warn('Prediction failed:', data.error);
+                }
+
+            } catch (error) {
+                console.error('Error processing chunk:', error);
+                // Don't stop recording on error, just log it
+            } finally {
+                isProcessing = false;
+            }
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            stopLiveCapture();
+        });
     </script>
 </body>
 </html>

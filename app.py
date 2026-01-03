@@ -29,7 +29,11 @@ app.config['MODEL_DIR'] = 'models'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Allowed extensions
-ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mov', 'mkv', 'webm'}
+ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mov', 'mkv', 'webm', 'webm'}
+
+# Global predictor instance (singleton pattern for performance)
+_predictor_instance = None
+_predictor_model_path = None
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -49,6 +53,24 @@ def find_latest_model():
             return str(model_path)
     
     return None
+
+def get_predictor():
+    """Get or create predictor instance (singleton pattern)"""
+    global _predictor_instance, _predictor_model_path
+    
+    model_path = find_latest_model()
+    if not model_path:
+        return None
+    
+    # If model path changed or predictor doesn't exist, create new one
+    if _predictor_instance is None or _predictor_model_path != model_path:
+        print(f"Loading model (first time or model changed): {model_path}")
+        _predictor_instance = SignLanguagePredictor(model_path)
+        _predictor_model_path = model_path
+    else:
+        print(f"Reusing existing model instance: {model_path}")
+    
+    return _predictor_instance
 
 @app.route('/')
 def index():
@@ -77,16 +99,13 @@ def predict():
     file.save(filepath)
     
     try:
-        # Find model
-        model_path = find_latest_model()
-        if not model_path:
+        # Get predictor instance (reused for performance)
+        predictor = get_predictor()
+        if not predictor:
             return jsonify({'error': 'No trained model found. Please train a model first.'}), 404
         
-        # Initialize predictor (reuse instance if possible, but for simplicity create new)
-        predictor = SignLanguagePredictor(model_path)
-        
-        # Make prediction
-        result = predictor.predict_from_video(filepath)
+        # Make prediction with multiple words detection
+        result = predictor.predict_from_video(filepath, detect_multiple_words=True)
         
         # Clean up uploaded file
         os.remove(filepath)
@@ -97,11 +116,88 @@ def predict():
             for word, conf in result['all_predictions'].items():
                 all_predictions.append({'word': word, 'confidence': float(conf)})
         
+        # Format words list
+        words_list = []
+        if 'words' in result and result.get('multiple_words_detected', False):
+            for word_data in result['words']:
+                words_list.append({
+                    'word': word_data['word'],
+                    'confidence': float(word_data['confidence']),
+                    'start_frame': word_data.get('start_frame', 0),
+                    'end_frame': word_data.get('end_frame', 0)
+                })
+        
         return jsonify({
             'success': True,
             'prediction': result['prediction'],
             'confidence': float(result.get('confidence', 0.0)),
-            'all_predictions': all_predictions
+            'all_predictions': all_predictions,
+            'words': words_list,
+            'multiple_words_detected': result.get('multiple_words_detected', False),
+            'word_count': result.get('word_count', 1)
+        })
+    
+    except Exception as e:
+        # Clean up on error
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        
+        return jsonify({'error': f'Prediction failed: {str(e)}'}), 500
+
+@app.route('/predict-live', methods=['POST'])
+def predict_live():
+    """Handle live video chunk and prediction"""
+    if 'video' not in request.files:
+        return jsonify({'error': 'No video chunk provided'}), 400
+    
+    file = request.files['video']
+    
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    # Save uploaded chunk temporarily (accept any video format for live)
+    import time
+    filename = f"live_{int(time.time() * 1000)}.webm"
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(filepath)
+    
+    try:
+        # Get predictor instance (reused for performance)
+        predictor = get_predictor()
+        if not predictor:
+            return jsonify({'error': 'No trained model found. Please train a model first.'}), 404
+        
+        # Make prediction with multiple words detection (for live, we still detect multiple words in each chunk)
+        result = predictor.predict_from_video(filepath, detect_multiple_words=True)
+        
+        # Clean up uploaded file
+        os.remove(filepath)
+        
+        # Format response
+        all_predictions = []
+        if 'all_predictions' in result:
+            for word, conf in result['all_predictions'].items():
+                all_predictions.append({'word': word, 'confidence': float(conf)})
+        
+        # Format words list (for live, usually one word per chunk, but could be multiple)
+        words_list = []
+        if 'words' in result and result.get('multiple_words_detected', False):
+            for word_data in result['words']:
+                words_list.append({
+                    'word': word_data['word'],
+                    'confidence': float(word_data['confidence']),
+                    'start_frame': word_data.get('start_frame', 0),
+                    'end_frame': word_data.get('end_frame', 0)
+                })
+        
+        return jsonify({
+            'success': True,
+            'prediction': result['prediction'],
+            'confidence': float(result.get('confidence', 0.0)),
+            'all_predictions': all_predictions,
+            'words': words_list,
+            'multiple_words_detected': result.get('multiple_words_detected', False),
+            'word_count': result.get('word_count', 1)
         })
     
     except Exception as e:
@@ -128,6 +224,9 @@ if __name__ == '__main__':
     else:
         print("⚠️  No trained model found. Please train a model first.")
     
+    # Development mode: use debug=True for auto-reload and better error messages
+    # Production: set FLASK_ENV=production or use debug=False
+    debug_mode = os.environ.get('FLASK_ENV') != 'production'
     port = int(os.environ.get('PORT', 5000))
-    app.run(debug=False, host='0.0.0.0', port=port)
+    app.run(debug=debug_mode, host='0.0.0.0', port=port)
 
