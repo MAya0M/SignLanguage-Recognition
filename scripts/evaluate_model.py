@@ -54,8 +54,9 @@ def evaluate_model(model_path: str, csv_path: str, keypoints_dir: str):
         label_names = ['GOODBYE', 'HELLO', 'ILOVEYOU', 'NO', 'PLEASE', 'SORRY', 'THANKS', 'YES']
     
     # Load data
+    # Keypoints are already normalized in extraction, so disable normalization here
     print(f"\nLoading test data...")
-    loader = SignLanguageDataLoader(csv_path, keypoints_dir)
+    loader = SignLanguageDataLoader(csv_path, keypoints_dir, normalize=False)
     splits = loader.get_all_splits()
     
     X_test, y_test = splits['test']

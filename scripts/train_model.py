@@ -71,8 +71,11 @@ def train_model(
     print("="*60 + "\n")
     
     # Load data
+    # NOTE: Keypoints are already normalized in extraction, so we disable normalization here
+    # This prevents double normalization which can blur class differences
     print("Loading data...")
-    loader = SignLanguageDataLoader(csv_path, keypoints_dir)
+    print("⚠️  Using data WITHOUT additional normalization (keypoints already normalized in extraction)")
+    loader = SignLanguageDataLoader(csv_path, keypoints_dir, normalize=False)
     splits = loader.get_all_splits()
     
     X_train, y_train = splits['train']

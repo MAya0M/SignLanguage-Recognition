@@ -25,7 +25,8 @@ def check_data_differences():
     csv_path = "Data/Labels/dataset.csv"
     keypoints_dir = "Data/Keypoints/rawVideos"
     
-    loader = SignLanguageDataLoader(csv_path, keypoints_dir)
+    # Keypoints are already normalized in extraction, so disable normalization here
+    loader = SignLanguageDataLoader(csv_path, keypoints_dir, normalize=False)
     splits = loader.get_all_splits()
     
     X_train, y_train = splits['train']

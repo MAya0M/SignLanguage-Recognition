@@ -15,19 +15,21 @@ import os
 class SignLanguageDataLoader:
     """Data loader for sign language keypoints dataset"""
     
-    def __init__(self, csv_path: str, keypoints_base_dir: str = "Data/Keypoints/rawVideos"):
+    def __init__(self, csv_path: str, keypoints_base_dir: str = "Data/Keypoints/rawVideos", normalize: bool = False):
         """
         Initialize data loader
         
         Args:
             csv_path: Path to CSV file with columns: path, label, split
             keypoints_base_dir: Base directory where keypoint files are stored
+            normalize: Whether to apply z-score normalization (default: False, since keypoints are already normalized in extraction)
         """
         self.csv_path = Path(csv_path)
         self.keypoints_base_dir = Path(keypoints_base_dir)
         self.label_encoder = LabelEncoder()
         self.max_length = None
         self.num_classes = None
+        self.normalize = normalize  # Store normalization flag
         
         # Load CSV
         self.df = pd.read_csv(self.csv_path)
@@ -40,6 +42,10 @@ class SignLanguageDataLoader:
         print(f"Found {len(self.df)} samples")
         print(f"Labels: {list(all_labels)}")
         print(f"Number of classes: {self.num_classes}")
+        if not normalize:
+            print("⚠️  Normalization DISABLED (keypoints already normalized in extraction)")
+        else:
+            print("✅ Normalization ENABLED")
     
     def load_keypoints(self, relative_path: str) -> np.ndarray:
         """
@@ -134,7 +140,8 @@ class SignLanguageDataLoader:
         
         # Normalize data (zero mean, unit variance) for better training
         # CRITICAL: Exclude padding zeros from normalization statistics!
-        if split == 'train':
+        # NOTE: Keypoints are already normalized in extraction, so normalization here is optional
+        if self.normalize and split == 'train':
             # Calculate mean and std only from non-zero (non-padded) data
             # Create a mask: True for actual data, False for padding
             # We'll use a simple heuristic: if a feature is all zeros across time, it's likely padding
@@ -186,7 +193,7 @@ class SignLanguageDataLoader:
                 X_padded = (X_padded - self.mean) / self.std
                 self._normalization_mean = self.mean
                 self._normalization_std = self.std
-        else:
+        elif self.normalize:
             # Use training statistics for validation/test
             if hasattr(self, '_normalization_mean') and hasattr(self, '_normalization_std'):
                 # Normalize only non-padded parts (keep padding as zeros)

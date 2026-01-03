@@ -51,7 +51,8 @@ def debug_training():
     # Load data
     print("\n1. Loading data...")
     try:
-        loader = SignLanguageDataLoader(csv_path, keypoints_dir)
+        # Keypoints are already normalized in extraction, so disable normalization here
+        loader = SignLanguageDataLoader(csv_path, keypoints_dir, normalize=False)
     except Exception as e:
         print(f"❌ Error loading data: {e}")
         import traceback
