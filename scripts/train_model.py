@@ -189,15 +189,36 @@ def train_model(
     X_train_shuffled = X_train[train_indices]
     y_train_shuffled = y_train[train_indices]
     
-    history = model.fit(
-        X_train_shuffled, y_train_shuffled,
-        batch_size=batch_size,
-        epochs=epochs,
-        validation_data=(X_val, y_val),
-        callbacks=callbacks,
-        verbose=1,
-        shuffle=True  # Shuffle batches
-    )
+    # Train model with progress tracking
+    print("\n" + "="*60)
+    print("Starting training...")
+    print("="*60)
+    print(f"Training samples: {len(X_train_shuffled)}")
+    print(f"Validation samples: {len(X_val)}")
+    print(f"Batch size: {batch_size}")
+    print(f"Epochs: {epochs}")
+    print("="*60 + "\n")
+    
+    try:
+        history = model.fit(
+            X_train_shuffled, y_train_shuffled,
+            batch_size=batch_size,
+            epochs=epochs,
+            validation_data=(X_val, y_val),
+            callbacks=callbacks,
+            verbose=1,
+            shuffle=True  # Shuffle batches
+        )
+    except KeyboardInterrupt:
+        print("\n⚠️  Training interrupted by user")
+        print("Saving current model state...")
+        model.save(run_dir / "interrupted_model.keras")
+        raise
+    except Exception as e:
+        print(f"\n❌ Error during training: {e}")
+        print("Saving current model state...")
+        model.save(run_dir / "error_model.keras")
+        raise
     
     # Save final model
     model.save(run_dir / "final_model.keras")
