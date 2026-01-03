@@ -35,6 +35,16 @@ temp/
 # Large data files (upload to Google Drive instead)
 sign_language_data.tar.gz
 
+# Original video files (too large for Git)
+Data/rawVideos/**/*.mp4
+Data/Sessions/**/*.mp4
+
+# Keypoints files (included in archive, too large for Git)
+Data/Keypoints/
+
+# Keep CSV file (small and important)
+!Data/Labels/dataset.csv
+
 # Flask
 *.db
 instance/
