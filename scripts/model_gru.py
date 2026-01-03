@@ -32,12 +32,12 @@ def build_gru_model(
     inputs = keras.Input(shape=input_shape)
     
     # First GRU layer (return sequences for stacked layers)
-    # Use normal dropout - the issue might be too little regularization
+    # Reduced dropout for small dataset - allow more learning
     x = layers.GRU(
         gru_units,
         return_sequences=(num_gru_layers > 1),
-        dropout=dropout_rate,
-        recurrent_dropout=recurrent_dropout,
+        dropout=dropout_rate * 0.5,  # Less dropout for small dataset
+        recurrent_dropout=recurrent_dropout * 0.5,  # Less recurrent dropout
         name='gru_1'
     )(inputs)
     
@@ -47,17 +47,17 @@ def build_gru_model(
         x = layers.GRU(
             gru_units,
             return_sequences=return_sequences,
-            dropout=dropout_rate,
-            recurrent_dropout=recurrent_dropout,
+            dropout=dropout_rate * 0.5,  # Less dropout
+            recurrent_dropout=recurrent_dropout * 0.5,  # Less recurrent dropout
             name=f'gru_{i}'
         )(x)
     
-    # Dense layers - removed batch normalization as it might interfere with small dataset
+    # Dense layers - less dropout for small dataset
     x = layers.Dense(gru_units, activation='relu', name='dense_1')(x)
-    x = layers.Dropout(dropout_rate * 0.7, name='dropout_1')(x)  # Slightly less dropout
+    x = layers.Dropout(dropout_rate * 0.5, name='dropout_1')(x)  # Less dropout for small dataset
     
     x = layers.Dense(gru_units // 2, activation='relu', name='dense_2')(x)
-    x = layers.Dropout(dropout_rate * 0.7, name='dropout_2')(x)
+    x = layers.Dropout(dropout_rate * 0.5, name='dropout_2')(x)  # Less dropout
     
     # Output layer
     outputs = layers.Dense(num_classes, activation='softmax', name='output')(x)

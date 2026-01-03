@@ -23,12 +23,12 @@ def train_model(
     csv_path: str,
     keypoints_dir: str,
     output_dir: str = "models",
-    batch_size: int = 32,
-    epochs: int = 100,
-    gru_units: int = 128,
-    num_gru_layers: int = 2,
-    dropout_rate: float = 0.3,
-    learning_rate: float = 0.001,
+    batch_size: int = 8,  # Smaller batch for better gradient updates
+    epochs: int = 200,
+    gru_units: int = 128,  # Smaller model for small dataset
+    num_gru_layers: int = 2,  # Fewer layers
+    dropout_rate: float = 0.2,  # Less dropout to allow more learning
+    learning_rate: float = 0.002,  # Higher learning rate for faster learning
     patience: int = 10,
     validation_split: float = 0.0  # Not used, we have explicit val set
 ):
@@ -168,11 +168,11 @@ def train_model(
         # ),
         ReduceLROnPlateau(
             monitor='val_loss',
-            factor=0.5,
-            patience=8,  # More patience before reducing LR
-            min_lr=1e-8,  # Lower minimum learning rate
+            factor=0.7,  # Less aggressive reduction
+            patience=10,  # More patience before reducing LR
+            min_lr=1e-6,  # Higher minimum learning rate
             verbose=1,
-            cooldown=3  # Wait before resuming normal operation
+            cooldown=2  # Shorter cooldown
         )
     ]
     
