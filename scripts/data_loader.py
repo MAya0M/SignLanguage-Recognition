@@ -130,10 +130,20 @@ class SignLanguageDataLoader:
             X_padded[i, :seq_length, :] = seq[:seq_length]
         
         # Normalize data (zero mean, unit variance) for better training
-        # Only normalize training data and use same stats for val/test
+        # Only normalize non-padded parts to avoid issues with padding zeros
         if split == 'train':
-            self.mean = np.mean(X_padded, axis=(0, 1), keepdims=True)
-            self.std = np.std(X_padded, axis=(0, 1), keepdims=True) + 1e-8  # Add small epsilon to avoid division by zero
+            # Calculate mean and std only from actual data (not padding)
+            # Create mask for non-zero sequences
+            non_padded = X_padded != 0
+            if np.any(non_padded):
+                # Calculate mean and std only from actual data points
+                self.mean = np.mean(X_padded[non_padded])
+                self.std = np.std(X_padded[non_padded]) + 1e-8
+            else:
+                self.mean = 0.0
+                self.std = 1.0
+            
+            # Normalize all data (including padding, but that's OK)
             X_padded = (X_padded - self.mean) / self.std
         else:
             # Use training statistics for validation/test
@@ -141,8 +151,13 @@ class SignLanguageDataLoader:
                 X_padded = (X_padded - self.mean) / self.std
             else:
                 # Fallback: normalize with current data stats
-                mean = np.mean(X_padded, axis=(0, 1), keepdims=True)
-                std = np.std(X_padded, axis=(0, 1), keepdims=True) + 1e-8
+                non_padded = X_padded != 0
+                if np.any(non_padded):
+                    mean = np.mean(X_padded[non_padded])
+                    std = np.std(X_padded[non_padded]) + 1e-8
+                else:
+                    mean = 0.0
+                    std = 1.0
                 X_padded = (X_padded - mean) / std
         
         print(f"Loaded {len(X_padded)} samples")

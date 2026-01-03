@@ -84,6 +84,31 @@ def train_model(
     print(f"  Val:   X={X_val.shape}, y={y_val.shape}")
     print(f"  Test:  X={X_test.shape}, y={y_test.shape}")
     
+    # Check data quality
+    print(f"\nData quality checks:")
+    print(f"  Train samples: {len(X_train)} (expected: ~130)")
+    print(f"  Val samples: {len(X_val)} (expected: ~40)")
+    print(f"  Test samples: {len(X_test)} (expected: ~56)")
+    
+    # Check for NaN or Inf
+    if np.isnan(X_train).any() or np.isinf(X_train).any():
+        print(f"  ⚠️  WARNING: NaN or Inf values in training data!")
+    else:
+        print(f"  ✅ No NaN or Inf values in training data")
+    
+    # Check label distribution
+    unique_train, counts_train = np.unique(y_train, return_counts=True)
+    print(f"\n  Label distribution in train:")
+    for label_idx, count in zip(unique_train, counts_train):
+        label_name = loader.label_encoder.inverse_transform([label_idx])[0]
+        print(f"    {label_name}: {count} samples")
+    
+    # Check data statistics
+    print(f"\n  Data statistics:")
+    print(f"    Train X - Mean: {np.mean(X_train):.4f}, Std: {np.std(X_train):.4f}")
+    print(f"    Train X - Min: {np.min(X_train):.4f}, Max: {np.max(X_train):.4f}")
+    print(f"    Val X - Mean: {np.mean(X_val):.4f}, Std: {np.std(X_val):.4f}")
+    
     # Build model
     input_shape = (X_train.shape[1], X_train.shape[2])
     num_classes = loader.num_classes
@@ -134,7 +159,7 @@ def train_model(
             patience=patience,
             restore_best_weights=True,
             verbose=1,
-            min_delta=0.0001  # Minimum change to qualify as improvement
+            min_delta=0.001  # Minimum change to qualify as improvement (increased)
         ),
         ReduceLROnPlateau(
             monitor='val_loss',

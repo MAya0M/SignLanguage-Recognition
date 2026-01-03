@@ -32,11 +32,12 @@ def build_gru_model(
     inputs = keras.Input(shape=input_shape)
     
     # First GRU layer (return sequences for stacked layers)
+    # Use lower dropout for first layer to allow more information flow
     x = layers.GRU(
         gru_units,
         return_sequences=(num_gru_layers > 1),
-        dropout=dropout_rate,
-        recurrent_dropout=recurrent_dropout,
+        dropout=dropout_rate * 0.5,  # Lower dropout for first layer
+        recurrent_dropout=recurrent_dropout * 0.5,
         name='gru_1'
     )(inputs)
     
