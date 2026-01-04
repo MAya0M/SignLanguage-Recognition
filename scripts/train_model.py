@@ -111,6 +111,29 @@ def train_model(
         label_name = loader.label_encoder.inverse_transform([label_idx])[0]
         print(f"    {label_name}: {count} samples")
     
+    # Calculate class weights to handle imbalance
+    # This gives more weight to minority classes during training
+    from sklearn.utils.class_weight import compute_class_weight
+    class_weights = compute_class_weight(
+        'balanced',
+        classes=np.unique(y_train),
+        y=y_train
+    )
+    class_weight_dict = {i: weight for i, weight in enumerate(class_weights)}
+    
+    print(f"\n  Class weights (to handle imbalance):")
+    for label_idx, weight in class_weight_dict.items():
+        label_name = loader.label_encoder.inverse_transform([label_idx])[0]
+        print(f"    {label_name}: {weight:.3f}")
+    
+    # Check if imbalance is severe
+    max_count = counts_train.max()
+    min_count = counts_train.min()
+    imbalance_ratio = max_count / min_count if min_count > 0 else float('inf')
+    if imbalance_ratio > 2.0:
+        print(f"\n  ⚠️  Class imbalance detected (ratio: {imbalance_ratio:.2f}x)")
+        print(f"     Using class weights to balance training")
+    
     # Check data statistics
     print(f"\n  Data statistics:")
     print(f"    Train X - Mean: {np.mean(X_train):.4f}, Std: {np.std(X_train):.4f}")
@@ -213,7 +236,8 @@ def train_model(
             validation_data=(X_val, y_val),
             callbacks=callbacks,
             verbose=1,
-            shuffle=True  # Shuffle batches
+            shuffle=True,  # Shuffle batches
+            class_weight=class_weight_dict  # Use class weights to handle imbalance
         )
     except KeyboardInterrupt:
         print("\n⚠️  Training interrupted by user")
