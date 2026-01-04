@@ -76,9 +76,11 @@ def train_model(
     # Load data
     # NOTE: Keypoints are already normalized in extraction, so we disable normalization here
     # This prevents double normalization which can blur class differences
+    # Smart frame sampling is enabled by default to skip similar start frames and focus on the gesture
     print("Loading data...")
     print("⚠️  Using data WITHOUT additional normalization (keypoints already normalized in extraction)")
-    loader = SignLanguageDataLoader(csv_path, keypoints_dir, normalize=False)
+    print("✅ Using smart frame sampling (skips similar start, focuses on gesture)")
+    loader = SignLanguageDataLoader(csv_path, keypoints_dir, normalize=False, use_smart_sampling=True)
     splits = loader.get_all_splits()
     
     X_train, y_train = splits['train']

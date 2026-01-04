@@ -132,6 +132,93 @@ def normalize_keypoints(keypoints_array, minimal=False):
     
     return normalized
 
+def smart_frame_sampling(keypoints_array, target_frames=96, skip_start_ratio=0.2):
+    """
+    דגימת פריימים חכמה שמתמקדת בחלק הרלוונטי של הסרטון
+    
+    הבעיה: סרטונים קצרים (~30 פריימים) והתחלה זהה בכל הסרטונים
+    הפתרון: 
+    1. מדלג על הפריימים הראשונים (התחלה זהה)
+    2. מתמקד בחלק האמצעי/סופי (המחווה עצמה)
+    3. משתמש ב-temporal interpolation אם הסרטון קצר מדי
+    
+    Args:
+        keypoints_array: numpy array with shape (num_frames, num_hands, 21, 3)
+        target_frames: מספר הפריימים הרצוי (default: 96 כמו המודל)
+        skip_start_ratio: איזה חלק מההתחלה לדלג (0.2 = 20% מההתחלה)
+    
+    Returns:
+        numpy array with shape (target_frames, num_hands, 21, 3)
+    """
+    num_frames = len(keypoints_array)
+    
+    if num_frames == 0:
+        return keypoints_array
+    
+    # אם הסרטון קצר מהרצוי, משתמש ב-temporal interpolation
+    if num_frames <= target_frames:
+        # מדלג על התחלה (החלק הזהה)
+        skip_frames = max(1, int(num_frames * skip_start_ratio))
+        relevant = keypoints_array[skip_frames:]
+        
+        if len(relevant) < 2:
+            # אם נשאר פחות מ-2 פריימים, חוזר עליהם
+            if len(relevant) == 0:
+                # אם אין פריימים, מחזיר את המקורי
+                relevant = keypoints_array
+            # חוזר על הפריימים
+            repeat_factor = (target_frames // len(relevant)) + 1
+            repeated = np.tile(relevant, (repeat_factor, 1, 1, 1))
+            return repeated[:target_frames]
+        
+        # Temporal interpolation להאריך את הסרטון
+        indices = np.linspace(0, len(relevant)-1, target_frames)
+        sampled = []
+        for idx in indices:
+            idx_int = int(idx)
+            if idx_int < len(relevant) - 1:
+                # Linear interpolation בין פריימים
+                alpha = idx - idx_int
+                frame = (1-alpha) * relevant[idx_int] + alpha * relevant[idx_int+1]
+            else:
+                frame = relevant[-1]
+            sampled.append(frame)
+        return np.array(sampled)
+    
+    else:
+        # סרטון ארוך - מדלג על התחלה, לוקח יותר מהסוף
+        skip_frames = max(1, int(num_frames * skip_start_ratio))
+        start_idx = skip_frames
+        end_idx = num_frames
+        
+        # דגימה לא אחידה: יותר מהסוף, פחות מהתחלה
+        # 30% מהחלק האמצעי (אחרי skip), 70% מהסוף
+        mid_point = start_idx + int((end_idx - start_idx) * 0.3)
+        
+        first_part_frames = int(target_frames * 0.3)
+        second_part_frames = target_frames - first_part_frames
+        
+        indices = []
+        
+        if first_part_frames > 0:
+            indices.extend(np.linspace(start_idx, mid_point, first_part_frames, dtype=int))
+        
+        if second_part_frames > 0:
+            indices.extend(np.linspace(mid_point, end_idx-1, second_part_frames, dtype=int))
+        
+        indices = sorted(set(indices))  # הסרת כפילויות
+        
+        # אם יש פחות מ-target_frames, משלים מהסוף
+        while len(indices) < target_frames and end_idx - 1 not in indices:
+            indices.append(end_idx - 1)
+            end_idx -= 1
+            if end_idx <= start_idx:
+                break
+        
+        # חותך אם יותר מדי
+        indices = sorted(indices)[:target_frames]
+        return keypoints_array[indices]
+
 def extract_hand_keypoints_from_video(video_path, max_hands=2):
     """
     Extracts hand keypoints from a video using MediaPipe Hand Landmarker
@@ -159,9 +246,9 @@ def extract_hand_keypoints_from_video(video_path, max_hands=2):
         options = vision.HandLandmarkerOptions(
             base_options=base_options,
             num_hands=max_hands,
-            min_hand_detection_confidence=0.5,
-            min_hand_presence_confidence=0.5,
-            min_tracking_confidence=0.5
+            min_hand_detection_confidence=0.3,  # Lower threshold for better detection
+            min_hand_presence_confidence=0.3,  # Lower threshold for better detection
+            min_tracking_confidence=0.3  # Lower threshold for better tracking
         )
         detector = vision.HandLandmarker.create_from_options(options)
         
@@ -205,8 +292,8 @@ def extract_hand_keypoints_from_video(video_path, max_hands=2):
         with mp_hands.Hands(
             static_image_mode=False,
             max_num_hands=max_hands,
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5
+            min_detection_confidence=0.3,  # Lower threshold for better detection
+            min_tracking_confidence=0.3  # Lower threshold for better tracking
         ) as hands:
             
             all_keypoints = []

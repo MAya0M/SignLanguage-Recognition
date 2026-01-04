@@ -10,12 +10,17 @@ from sklearn.preprocessing import LabelEncoder
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from typing import Tuple, List, Dict
 import os
+import sys
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from scripts.extract_keypoints import smart_frame_sampling
 
 
 class SignLanguageDataLoader:
     """Data loader for sign language keypoints dataset"""
     
-    def __init__(self, csv_path: str, keypoints_base_dir: str = "Data/Keypoints/rawVideos", normalize: bool = False):
+    def __init__(self, csv_path: str, keypoints_base_dir: str = "Data/Keypoints/rawVideos", 
+                 normalize: bool = False, use_smart_sampling: bool = True, target_frames: int = 96):
         """
         Initialize data loader
         
@@ -23,6 +28,8 @@ class SignLanguageDataLoader:
             csv_path: Path to CSV file with columns: path, label, split
             keypoints_base_dir: Base directory where keypoint files are stored
             normalize: Whether to apply z-score normalization (default: False, since keypoints are already normalized in extraction)
+            use_smart_sampling: Whether to use smart frame sampling (skip start, focus on relevant part)
+            target_frames: Target number of frames for smart sampling (default: 96)
         """
         self.csv_path = Path(csv_path)
         self.keypoints_base_dir = Path(keypoints_base_dir)
@@ -30,6 +37,8 @@ class SignLanguageDataLoader:
         self.max_length = None
         self.num_classes = None
         self.normalize = normalize  # Store normalization flag
+        self.use_smart_sampling = use_smart_sampling
+        self.target_frames = target_frames
         
         # Load CSV
         self.df = pd.read_csv(self.csv_path)
@@ -68,6 +77,11 @@ class SignLanguageDataLoader:
         
         # Load keypoints array (shape: num_frames, 2, 21, 3)
         keypoints = np.load(actual_path)
+        
+        # Apply smart frame sampling if enabled
+        # This skips the similar start frames and focuses on the actual gesture
+        if self.use_smart_sampling:
+            keypoints = smart_frame_sampling(keypoints, target_frames=self.target_frames, skip_start_ratio=0.2)
         
         # Flatten to (num_frames, features) where features = 2 * 21 * 3 = 126
         # Reshape from (num_frames, 2, 21, 3) to (num_frames, 126)

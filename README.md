@@ -133,6 +133,8 @@ python app.py
 
 ## 🎬 Using the Web App
 
+### Access from Computer
+
 1. **Start the app:**
    ```bash
    python app.py
@@ -143,6 +145,67 @@ python app.py
 3. **Upload video or use live camera:**
    - Upload a video file
    - Or click "Start Live Camera" for real-time recognition
+
+### 📱 Access from Phone (for Live Camera)
+
+**Important:** Modern browsers require **HTTPS** to access the camera. Use one of these solutions:
+
+#### Option 1: Using ngrok (Recommended - Easiest!)
+
+1. **Install ngrok:**
+   - Download from: https://ngrok.com/download
+   - Or use: `choco install ngrok` (Windows with Chocolatey)
+   - Or: `winget install ngrok`
+
+2. **Start the Flask app:**
+   ```bash
+   python app.py
+   ```
+
+3. **In a new terminal, start ngrok:**
+   ```bash
+   ngrok http 5000
+   ```
+
+4. **Copy the HTTPS URL** from ngrok (looks like: `https://abc123.ngrok.io`)
+
+5. **Open that URL on your phone** - Camera will work! ✅
+
+#### Option 2: Using Mobile Hotspot
+
+1. **Create hotspot on your computer:**
+   - Windows: Settings → Network & Internet → Mobile hotspot → On
+
+2. **Connect your phone to the hotspot**
+
+3. **Start the app:**
+   ```bash
+   python app.py
+   ```
+
+4. **Use the IP address shown** (e.g., `http://192.168.137.1:5000`)
+
+5. **Note:** You'll still need HTTPS for camera. Use ngrok with the hotspot IP:
+   ```bash
+   ngrok http 192.168.137.1:5000
+   ```
+
+#### Option 3: Using Phone's Hotspot
+
+1. **Turn on hotspot on your phone**
+
+2. **Connect your computer to the phone's hotspot**
+
+3. **Start the app:**
+   ```bash
+   python app.py
+   ```
+
+4. **Use the IP address shown** on your phone's browser
+
+5. **Note:** You'll still need HTTPS for camera. Use ngrok.
+
+---
 
 4. **Get predictions:**
    - The app will show all recognized words from the video

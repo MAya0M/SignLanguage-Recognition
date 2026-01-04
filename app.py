@@ -228,5 +228,32 @@ if __name__ == '__main__':
     # Production: set FLASK_ENV=production or use debug=False
     debug_mode = os.environ.get('FLASK_ENV') != 'production'
     port = int(os.environ.get('PORT', 5000))
+    
+    # Get local IP address for mobile access
+    import socket
+    try:
+        # Connect to a remote server to get local IP
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+    except Exception:
+        local_ip = "127.0.0.1"
+    
+    print("\n" + "="*60)
+    print("🚀 Sign Language Recognition App is running!")
+    print("="*60)
+    print(f"📱 Access from your phone:")
+    print(f"   http://{local_ip}:{port}")
+    print(f"\n💻 Access from this computer:")
+    print(f"   http://localhost:{port}")
+    print(f"   http://127.0.0.1:{port}")
+    print("="*60)
+    print("\n⚠️  Make sure:")
+    print("   1. Your phone and computer are on the same WiFi network")
+    print("   2. Windows Firewall allows connections on port", port)
+    print("   3. If it doesn't work, check your firewall settings")
+    print("\n")
+    
     app.run(debug=debug_mode, host='0.0.0.0', port=port)
 

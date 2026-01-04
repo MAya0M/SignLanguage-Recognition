@@ -665,7 +665,17 @@
             try {
                 // Check if getUserMedia is available
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    throw new Error('Camera API not supported in this browser. Please use Chrome, Firefox, or Edge.');
+                    // Check if we're on HTTP (not HTTPS) - browsers require HTTPS for camera access
+                    if (window.location.protocol === 'http:') {
+                        const errorMsg = '⚠️ Camera API requires HTTPS connection!\n\n' +
+                              'Solutions:\n' +
+                              '1. Use ngrok: ngrok http 5000\n' +
+                              '2. Access the ngrok HTTPS URL from your phone\n\n' +
+                              'See README for detailed instructions.';
+                        throw new Error(errorMsg);
+                    } else {
+                        throw new Error('Camera API not supported in this browser. Please use Chrome, Firefox, or Edge.');
+                    }
                 }
                 
                 liveStatus.textContent = '⏳ Requesting camera access...';
@@ -780,7 +790,8 @@
                     liveWordsContainer.innerHTML = '';
                 }
 
-                // Record chunks every 2 seconds (slightly longer for better word detection)
+                // Record chunks every 1 second for more continuous recognition
+                // This provides better real-time feedback
                 processingInterval = setInterval(() => {
                     if (!isRecording) {
                         clearInterval(processingInterval);
@@ -794,7 +805,7 @@
                         recordedChunks = [];
                         mediaRecorder.start();
                     }
-                }, 2000); // 2 seconds for better word detection
+                }, 1000); // 1 second for more continuous recognition
 
                 mediaRecorder.start();
 

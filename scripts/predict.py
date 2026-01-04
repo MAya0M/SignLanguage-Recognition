@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from scripts.extract_keypoints import extract_hand_keypoints_from_video, normalize_keypoints
+from scripts.extract_keypoints import extract_hand_keypoints_from_video, normalize_keypoints, smart_frame_sampling
 
 
 class SignLanguagePredictor:
@@ -63,12 +63,28 @@ class SignLanguagePredictor:
         Returns:
             Preprocessed array with shape (1, max_length, features)
         """
-        # Normalize keypoints (same as training - MINIMAL: only translate)
+        # Apply smart frame sampling to focus on relevant part (skip similar start)
+        # This matches what we do during training
+        max_length = self.input_shape[0]
+        keypoints = smart_frame_sampling(keypoints, target_frames=max_length, skip_start_ratio=0.2)
+        
+        # CRITICAL FIX: Use EXACTLY the same normalization as during training
+        # During training, keypoints were normalized with minimal=True (only translation)
+        # We must use the same normalization here to match what the model learned
         keypoints = normalize_keypoints(keypoints, minimal=True)
         
         # Flatten to (num_frames, features)
+        # IMPORTANT: Same flattening as in data_loader.py
+        # From (num_frames, 2, 21, 3) to (num_frames, 126)
         num_frames = keypoints.shape[0]
         keypoints_flat = keypoints.reshape(num_frames, -1)
+        
+        # Debug: Check data statistics
+        print(f"📊 Preprocessing debug:")
+        print(f"   Input shape: {keypoints.shape}")
+        print(f"   Flattened shape: {keypoints_flat.shape}")
+        print(f"   Mean: {np.mean(keypoints_flat):.4f}, Std: {np.std(keypoints_flat):.4f}")
+        print(f"   Min: {np.min(keypoints_flat):.4f}, Max: {np.max(keypoints_flat):.4f}")
         
         # Pad to expected length
         max_length = self.input_shape[0]
@@ -80,6 +96,9 @@ class SignLanguagePredictor:
             truncating='post',
             value=0.0
         )
+        
+        print(f"   Padded shape: {keypoints_padded.shape}")
+        print(f"   Expected input shape: {self.input_shape}")
         
         return keypoints_padded
     
@@ -93,11 +112,39 @@ class SignLanguagePredictor:
         Returns:
             Dictionary with prediction results
         """
-        # Preprocess
-        X = self.preprocess_keypoints(keypoints)
+        # Check if hands are detected (at least some non-zero keypoints)
+        total_keypoints = keypoints.size
+        non_zero_keypoints = np.count_nonzero(keypoints)
+        detection_ratio = non_zero_keypoints / total_keypoints if total_keypoints > 0 else 0
         
-        # Predict
-        predictions = self.model.predict(X, verbose=0)
+        if detection_ratio < 0.1:  # Less than 10% of keypoints are non-zero
+            print(f"⚠️ Warning: Very few keypoints detected ({detection_ratio*100:.1f}%). Hands may not be visible.")
+            # Return a low-confidence prediction to indicate uncertainty
+            if self.label_names:
+                # Return uniform distribution (all classes equally likely)
+                num_classes = len(self.label_names)
+                uniform_pred = np.ones(num_classes) / num_classes
+                predictions = uniform_pred.reshape(1, -1)
+            else:
+                # Can't determine number of classes without label names
+                raise ValueError("Cannot make prediction: no hands detected and no label mapping available")
+        else:
+            # Preprocess
+            X = self.preprocess_keypoints(keypoints)
+            
+            # Predict
+            predictions = self.model.predict(X, verbose=0)
+        
+        # Debug: Print all predictions
+        print(f"\n🔍 Debug - All predictions:")
+        if self.label_names:
+            for i, label_name in enumerate(self.label_names):
+                conf = float(predictions[0][i])
+                print(f"   {label_name}: {conf:.4f} ({conf*100:.2f}%)")
+        else:
+            for i in range(len(predictions[0])):
+                conf = float(predictions[0][i])
+                print(f"   Class {i}: {conf:.4f} ({conf*100:.2f}%)")
         
         # Get top prediction
         top_idx = np.argmax(predictions[0])
@@ -108,6 +155,8 @@ class SignLanguagePredictor:
             label = self.label_names[top_idx]
         else:
             label = str(top_idx)
+        
+        print(f"✅ Top prediction: {label} (confidence: {confidence:.4f} = {confidence*100:.2f}%)")
         
         # Get top 3 predictions
         top_3_indices = np.argsort(predictions[0])[-3:][::-1]
@@ -282,12 +331,42 @@ class SignLanguagePredictor:
         print(f"Extracting keypoints from video: {video_path}...")
         
         # Extract keypoints
+        # NOTE: extract_hand_keypoints_from_video already normalizes with minimal=True
         keypoints = extract_hand_keypoints_from_video(video_path, max_hands=max_hands)
         
         if keypoints is None or len(keypoints) == 0:
             raise ValueError(f"Failed to extract keypoints from {video_path}")
         
         print(f"Extracted {len(keypoints)} frames")
+        print(f"Keypoints shape: {keypoints.shape}")
+        
+        # Check if hands are detected
+        num_frames_with_hands = 0
+        for frame_idx in range(len(keypoints)):
+            # Check if any hand has non-zero keypoints (hand detected)
+            for hand_idx in range(keypoints.shape[1]):
+                hand_kp = keypoints[frame_idx, hand_idx, :, :]
+                if np.any(hand_kp != 0):  # At least one keypoint is non-zero
+                    num_frames_with_hands += 1
+                    break
+        
+        print(f"Frames with detected hands: {num_frames_with_hands}/{len(keypoints)} ({num_frames_with_hands/len(keypoints)*100:.1f}%)")
+        
+        if num_frames_with_hands == 0:
+            raise ValueError("⚠️ No hands detected in video! Please ensure your hands are visible and well-lit.")
+        elif num_frames_with_hands < len(keypoints) * 0.3:
+            print(f"⚠️ Warning: Only {num_frames_with_hands/len(keypoints)*100:.1f}% of frames have detected hands. Results may be inaccurate.")
+        
+        # Debug: Check if keypoints look reasonable
+        if len(keypoints) > 0:
+            # Check both hands
+            for hand_idx in range(keypoints.shape[1]):
+                first_hand = keypoints[0, hand_idx, :, :]  # First frame, this hand, all keypoints
+                non_zero_count = np.count_nonzero(first_hand)
+                print(f"Keypoints stats (first frame, hand {hand_idx}):")
+                print(f"   Mean: {np.mean(first_hand):.4f}, Std: {np.std(first_hand):.4f}")
+                print(f"   Min: {np.min(first_hand):.4f}, Max: {np.max(first_hand):.4f}")
+                print(f"   Non-zero keypoints: {non_zero_count}/63 (wrist + 20 finger points * 3 coords)")
         
         if detect_multiple_words:
             # For short videos (like live chunks), treat as single word
