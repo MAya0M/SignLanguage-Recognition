@@ -4,13 +4,13 @@ Sign language recognition system using **CNN + LSTM** Neural Network.
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/MAya0M/SignLanguage-Recognition/blob/main/notebooks/SignLanguage_Training.ipynb)
 
-> **Fully Automatic!** Just click the button above, select GPU, and Run all. Everything will work automatically! 🚀
+> **Fully Automatic!** Just click the button above, select GPU, and Run all. Everything will work automatically!
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Train Model in Google Colab (Recommended!)
 
-1. Click the **"Open in Colab"** button above ⬆️
+1. Click the **"Open in Colab"** button above
 2. **Runtime → Change runtime type → Select GPU**
 3. **Runtime → Run all**
 
@@ -18,7 +18,7 @@ Sign language recognition system using **CNN + LSTM** Neural Network.
 
 ---
 
-## 📋 Project Structure
+## Project Structure
 
 ```
 SignLanguage-Recognition/
@@ -43,7 +43,7 @@ SignLanguage-Recognition/
 
 ---
 
-## 🎯 How It Works
+## How It Works
 
 ### 1. Extract Keypoints
 - Uses MediaPipe to extract hand keypoints from videos
@@ -61,12 +61,12 @@ SignLanguage-Recognition/
 - Trains on Google Colab with free GPU
 
 ### 4. Predict
-- Upload video through web app
+- Use live camera through web app
 - Or use command line: `python scripts/predict.py --model models/.../best_model.keras --video test.mp4`
 
 ---
 
-## 💻 Local Installation
+## Local Installation
 
 ### 1. Clone Repository
 
@@ -131,7 +131,7 @@ python app.py
 
 ---
 
-## 🎬 Using the Web App
+## Using the Web App
 
 ### Access from Computer
 
@@ -142,11 +142,10 @@ python app.py
 
 2. **Open browser:** `http://localhost:5000`
 
-3. **Upload video or use live camera:**
-   - Upload a video file
-   - Or click "Start Live Camera" for real-time recognition
+3. **Use live camera:**
+   - Click "Start Recognition" for real-time sign language translation
 
-### 📱 Access from Phone (for Live Camera)
+### Access from Phone (for Live Camera)
 
 **Important:** Modern browsers require **HTTPS** to access the camera. Use one of these solutions:
 
@@ -169,7 +168,7 @@ python app.py
 
 4. **Copy the HTTPS URL** from ngrok (looks like: `https://abc123.ngrok.io`)
 
-5. **Open that URL on your phone** - Camera will work! ✅
+5. **Open that URL on your phone** - Camera will work!
 
 #### Option 2: Using Mobile Hotspot
 
@@ -212,7 +211,7 @@ python app.py
 
 ---
 
-## 📊 Model Architecture
+## Model Architecture
 
 ### CNN + LSTM Model
 
@@ -242,7 +241,7 @@ Output (8 classes)
 
 ---
 
-## 📝 Adding New Videos
+## Adding New Videos
 
 1. **Add videos to `Data/rawVideos/[WordName]/`:**
    ```
@@ -276,7 +275,7 @@ Output (8 classes)
 
 ---
 
-## 🔧 Model Parameters
+## Model Parameters
 
 Default parameters (optimized for small datasets):
 
@@ -300,7 +299,7 @@ python scripts/train_model.py \
 
 ---
 
-## 📦 Adding Trained Model to Project
+## Adding Trained Model to Project
 
 After training in Colab:
 
@@ -322,7 +321,7 @@ After training in Colab:
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Model stuck at 12.5% accuracy?
 
@@ -353,7 +352,7 @@ After training in Colab:
 
 ---
 
-## 📚 Requirements
+## Requirements
 
 - Python 3.8+
 - GPU (recommended for training) - Google Colab provides free GPU!
@@ -362,7 +361,7 @@ After training in Colab:
 
 ---
 
-## 🚀 Deployment
+## Deployment
 
 ### Deploy Web App to Railway (Free)
 
@@ -379,13 +378,13 @@ Your app will be live at: `https://your-app-name.railway.app`
 
 ---
 
-## 📄 License
+## License
 
 This project is for educational purposes.
 
 ---
 
-## 🤝 Support
+## Support
 
 For questions and issues:
 1. Check the troubleshooting section above
@@ -394,4 +393,4 @@ For questions and issues:
 
 ---
 
-**Good luck! 🚀**
+**Good luck!**

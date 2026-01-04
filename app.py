@@ -220,9 +220,9 @@ if __name__ == '__main__':
     # Find model on startup
     model_path = find_latest_model()
     if model_path:
-        print(f"✅ Found model: {model_path}")
+        print(f"Found model: {model_path}")
     else:
-        print("⚠️  No trained model found. Please train a model first.")
+        print("No trained model found. Please train a model first.")
     
     # Development mode: use debug=True for auto-reload and better error messages
     # Production: set FLASK_ENV=production or use debug=False
@@ -241,15 +241,15 @@ if __name__ == '__main__':
         local_ip = "127.0.0.1"
     
     print("\n" + "="*60)
-    print("🚀 Sign Language Recognition App is running!")
+    print("Sign Language Recognition App is running!")
     print("="*60)
-    print(f"📱 Access from your phone:")
+    print(f"Access from your phone:")
     print(f"   http://{local_ip}:{port}")
-    print(f"\n💻 Access from this computer:")
+    print(f"\nAccess from this computer:")
     print(f"   http://localhost:{port}")
     print(f"   http://127.0.0.1:{port}")
     print("="*60)
-    print("\n⚠️  Make sure:")
+    print("\nMake sure:")
     print("   1. Your phone and computer are on the same WiFi network")
     print("   2. Windows Firewall allows connections on port", port)
     print("   3. If it doesn't work, check your firewall settings")
