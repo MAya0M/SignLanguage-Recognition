@@ -134,18 +134,18 @@ def normalize_keypoints(keypoints_array, minimal=False):
 
 def smart_frame_sampling(keypoints_array, target_frames=96, skip_start_ratio=0.2):
     """
-    דגימת פריימים חכמה שמתמקדת בחלק הרלוונטי של הסרטון
+    Smart frame sampling that focuses on the relevant part of the video.
     
-    הבעיה: סרטונים קצרים (~30 פריימים) והתחלה זהה בכל הסרטונים
-    הפתרון: 
-    1. מדלג על הפריימים הראשונים (התחלה זהה)
-    2. מתמקד בחלק האמצעי/סופי (המחווה עצמה)
-    3. משתמש ב-temporal interpolation אם הסרטון קצר מדי
+    Problem: Short videos (~30 frames) and similar start in all videos.
+    Solution:
+    1. Skip the first frames (similar start)
+    2. Focus on middle/end part (the actual gesture)
+    3. Use temporal interpolation if video is too short
     
     Args:
         keypoints_array: numpy array with shape (num_frames, num_hands, 21, 3)
-        target_frames: מספר הפריימים הרצוי (default: 96 כמו המודל)
-        skip_start_ratio: איזה חלק מההתחלה לדלג (0.2 = 20% מההתחלה)
+        target_frames: desired number of frames (default: 96, matching model input)
+        skip_start_ratio: portion of start to skip (0.2 = 20% of start)
     
     Returns:
         numpy array with shape (target_frames, num_hands, 21, 3)
@@ -155,29 +155,29 @@ def smart_frame_sampling(keypoints_array, target_frames=96, skip_start_ratio=0.2
     if num_frames == 0:
         return keypoints_array
     
-    # אם הסרטון קצר מהרצוי, משתמש ב-temporal interpolation
+    # If video is shorter than target, use temporal interpolation
     if num_frames <= target_frames:
-        # מדלג על התחלה (החלק הזהה)
+        # Skip the start (similar part)
         skip_frames = max(1, int(num_frames * skip_start_ratio))
         relevant = keypoints_array[skip_frames:]
         
         if len(relevant) < 2:
-            # אם נשאר פחות מ-2 פריימים, חוזר עליהם
+            # If less than 2 frames remain, repeat them
             if len(relevant) == 0:
-                # אם אין פריימים, מחזיר את המקורי
+                # If no frames, return original
                 relevant = keypoints_array
-            # חוזר על הפריימים
+            # Repeat frames
             repeat_factor = (target_frames // len(relevant)) + 1
             repeated = np.tile(relevant, (repeat_factor, 1, 1, 1))
             return repeated[:target_frames]
         
-        # Temporal interpolation להאריך את הסרטון
+        # Temporal interpolation to extend the video
         indices = np.linspace(0, len(relevant)-1, target_frames)
         sampled = []
         for idx in indices:
             idx_int = int(idx)
             if idx_int < len(relevant) - 1:
-                # Linear interpolation בין פריימים
+                # Linear interpolation between frames
                 alpha = idx - idx_int
                 frame = (1-alpha) * relevant[idx_int] + alpha * relevant[idx_int+1]
             else:
@@ -186,13 +186,13 @@ def smart_frame_sampling(keypoints_array, target_frames=96, skip_start_ratio=0.2
         return np.array(sampled)
     
     else:
-        # סרטון ארוך - מדלג על התחלה, לוקח יותר מהסוף
+        # Long video - skip start, take more from end
         skip_frames = max(1, int(num_frames * skip_start_ratio))
         start_idx = skip_frames
         end_idx = num_frames
         
-        # דגימה לא אחידה: יותר מהסוף, פחות מהתחלה
-        # 30% מהחלק האמצעי (אחרי skip), 70% מהסוף
+        # Non-uniform sampling: more from end, less from start
+        # 30% from middle part (after skip), 70% from end
         mid_point = start_idx + int((end_idx - start_idx) * 0.3)
         
         first_part_frames = int(target_frames * 0.3)
@@ -206,16 +206,16 @@ def smart_frame_sampling(keypoints_array, target_frames=96, skip_start_ratio=0.2
         if second_part_frames > 0:
             indices.extend(np.linspace(mid_point, end_idx-1, second_part_frames, dtype=int))
         
-        indices = sorted(set(indices))  # הסרת כפילויות
+        indices = sorted(set(indices))  # Remove duplicates
         
-        # אם יש פחות מ-target_frames, משלים מהסוף
+        # If less than target_frames, complete from end
         while len(indices) < target_frames and end_idx - 1 not in indices:
             indices.append(end_idx - 1)
             end_idx -= 1
             if end_idx <= start_idx:
                 break
         
-        # חותך אם יותר מדי
+        # Trim if too many
         indices = sorted(indices)[:target_frames]
         return keypoints_array[indices]
 

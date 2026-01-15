@@ -131,19 +131,4 @@ def compile_model(model: keras.Model, learning_rate: float = 0.001) -> keras.Mod
     return model
 
 
-if __name__ == "__main__":
-    # Test model creation
-    print("Testing CNN + LSTM model creation...")
-    
-    # Example input shape: (sequence_length, num_features)
-    input_shape = (96, 126)  # max 96 frames, 126 features per frame
-    num_classes = 8  # 8 sign language classes
-    
-    model = build_cnn_lstm_model(input_shape, num_classes)
-    model = compile_model(model)
-    
-    print("\nModel summary:")
-    model.summary()
-    
-    print(f"\nTotal parameters: {model.count_params():,}")
 

@@ -216,7 +216,7 @@ class SignLanguageDataLoader:
                 # Padding remains as zeros
             else:
                 # Fallback: normalize with current data stats (shouldn't happen)
-                print("⚠️  WARNING: Using fallback normalization for validation/test")
+                print("WARNING: Using fallback normalization for validation/test")
                 # Calculate stats from non-padded data
                 non_padded_data = []
                 for i, seq_len in enumerate(seq_lengths):
@@ -266,20 +266,4 @@ class SignLanguageDataLoader:
         return self.label_encoder.transform([label])[0]
 
 
-if __name__ == "__main__":
-    # Test data loader
-    loader = SignLanguageDataLoader("Data/Labels/dataset.csv")
-    
-    print("\n" + "="*60)
-    print("Testing data loader...")
-    print("="*60)
-    
-    splits = loader.get_all_splits()
-    
-    print("\nSummary:")
-    for split_name, (X, y) in splits.items():
-        print(f"{split_name}: X.shape={X.shape}, y.shape={y.shape}")
-    
-    print(f"\nLabel names: {loader.get_label_names()}")
-    print(f"Number of classes: {loader.num_classes}")
 

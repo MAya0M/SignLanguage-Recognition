@@ -27,10 +27,12 @@ Thumbs.db
 
 # Project specific
 models/run_*/
-output/*.mp4
+output/
 *.log
 temp/
 *.pem
+__pycache__/
+*.pyc
 
 # Large data files (upload to Google Drive instead)
 sign_language_data.tar.gz
